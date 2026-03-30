@@ -1,6 +1,5 @@
-import tensorflow as tf
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+from keras.applications import MobileNetV2
+from keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
 
 model = MobileNetV2(weights="imagenet")
 
