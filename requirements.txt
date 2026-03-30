@@ -57,4 +57,3 @@ wrapt==2.1.2
 python-multipart==0.0.22
 opencv-python==4.13.0.92
 python-dotenv==1.2.2
-keras
