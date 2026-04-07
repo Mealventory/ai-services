@@ -91,6 +91,9 @@ async def scan_image(
         "items": [item["name"] for item in text_result.get("items", [])],
         "item_details": text_result.get("items", []),
         "text_preview": text_result["text_preview"],
+        "expiry_dates": text_result.get("expiry_dates", []),
+        "needs_user_input": text_result.get("needs_user_input", False),
+        "prompt": text_result.get("prompt"),
     }
 
 

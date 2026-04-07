@@ -56,6 +56,8 @@ To create google-vision.json:
 - Place the file under credentials
 - Rename it to google-vision.json
 
+The Vision credential is required for OCR.
+
 ## 6) Run the AI service
 
 uvicorn main:app --reload --host 0.0.0.0 --port 8001

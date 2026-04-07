@@ -12,3 +12,8 @@ app.include_router(scan_router, prefix="/scan", tags=["Scan"])
 @app.get("/")
 def health_check():
     return {"status": "AI service running"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8001)

@@ -6,6 +6,14 @@ Handles receipt scanning, produce identification, and ML-based classification.
 
 ---
 
+## Credentials
+
+- Google Vision OCR requires a service account JSON at `credentials/google-vision.json`
+
+To get the Vision credential JSON, follow the setup steps in [SETUP.md](SETUP.md).
+
+---
+
 ## 🧠 Core Capabilities
 
 - Google Vision OCR

@@ -82,6 +82,41 @@ FOOD_TERMS = {
     "beans",
 }
 
+FOOD_ALIASES = {
+    "apple": [r"\bapples?\b", r"\bappl\b"],
+    "banana": [r"\bbananas?\b", r"\bbnan\b"],
+    "orange": [r"\boranges?\b", r"\borg\b"],
+    "milk": [r"\bmlk\b", r"\bwhole\s+milk\b", r"\b2%\s+milk\b"],
+    "bread": [r"\bbread\b", r"\bbrd\b"],
+    "rice": [r"\brice\b", r"\brce\b"],
+    "chicken": [
+        r"\bchicken\b",
+        r"\bchk\b",
+        r"\bchkn\b",
+        r"\bchik\b",
+        r"\b(chk|chkn|chik)\b.*\b(bst|breast|bnls|boneless)\b",
+        r"\b(bst|breast|bnls|boneless)\b.*\b(chk|chkn|chik)\b",
+    ],
+    "beef": [r"\bbeef\b", r"\bbf\b", r"\bbff\b", r"\bground\s+beef\b"],
+    "fish": [r"\bfish\b", r"\bsalmon\b", r"\btuna\b", r"\btilapia\b"],
+    "cheese": [r"\bcheese\b", r"\bchs\b"],
+    "yogurt": [r"\byogurt\b", r"\byog\b"],
+    "butter": [r"\bbutter\b", r"\bbuttr\b"],
+    "egg": [r"\beggs?\b", r"\begg\b"],
+    "carrot": [r"\bcarrots?\b", r"\bcarr\b"],
+    "potato": [r"\bpotatoes?\b", r"\bpotato\b", r"\bptto\b"],
+    "tomato": [r"\btomatoes?\b", r"\btomato\b"],
+    "pepper": [r"\bpepper(s)?\b", r"\bpepp\b"],
+    "spinach": [r"\bspinach\b", r"\bspnch\b"],
+}
+
+EXPIRY_PATTERNS = [
+    r"\b(?:exp(?:iry)?|best\s*before|use\s*by|bb)[:\s\-]*([a-z]{3,9}\s+\d{1,2}(?:,?\s*\d{2,4})?)",
+    r"\b(?:exp(?:iry)?|best\s*before|use\s*by|bb)[:\s\-]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})",
+    r"\b([a-z]{3,9}\s+\d{1,2}\s+\d{2,4})\b",
+    r"\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b",
+]
+
 
 def _keyword_hits(text: str, keywords: set[str]) -> int:
     return sum(1 for token in keywords if token in text)
@@ -109,21 +144,51 @@ def _classify_text(full_text: str) -> tuple[str, float]:
     return "tag", round(confidence, 2)
 
 
+def _match_food_name(line: str) -> str | None:
+    for token in re.findall(r"[a-zA-Z]+", line):
+        if token in FOOD_TERMS:
+            return token
+
+    for canonical_name, patterns in FOOD_ALIASES.items():
+        if any(re.search(pattern, line, flags=re.IGNORECASE) for pattern in patterns):
+            return canonical_name
+
+    return None
+
+
 def _extract_food_items(full_text: str) -> list[dict]:
-    tokens = re.findall(r"[a-zA-Z]+", full_text.lower())
-    seen: set[str] = set()
+    normalized_text = full_text.lower()
+    lines = [line.strip() for line in normalized_text.splitlines() if line.strip()]
     items: list[dict] = []
-    for token in tokens:
-        if token in FOOD_TERMS and token not in seen:
-            seen.add(token)
+
+    for line in lines:
+        matched_name = _match_food_name(line)
+
+        if matched_name:
             items.append(
                 {
-                    "name": token,
+                    "name": matched_name,
                     "confidence": 0.7,
-                    "source": "ocr",
+                    "source": "ocr_alias" if matched_name in FOOD_ALIASES else "ocr",
                 }
             )
+
     return items
+
+
+def _extract_expiry_dates(full_text: str) -> list[str]:
+    normalized = " ".join(full_text.lower().split())
+    found: list[str] = []
+    seen: set[str] = set()
+
+    for pattern in EXPIRY_PATTERNS:
+        for match in re.findall(pattern, normalized, flags=re.IGNORECASE):
+            candidate = match.strip().upper()
+            if candidate and candidate not in seen:
+                seen.add(candidate)
+                found.append(candidate)
+
+    return found
 
 
 async def detect_text_type(image_bytes, expected_type: str | None = None):
@@ -160,12 +225,25 @@ async def detect_text_type(image_bytes, expected_type: str | None = None):
     full_text = texts[0].description
     detected_type, confidence = _classify_text(full_text)
     text_preview = " ".join(full_text.split())[:220]
+    extracted_items = _extract_food_items(full_text)
+    expiry_dates = _extract_expiry_dates(full_text)
+
+    if expected_type == "tag" and expiry_dates:
+        detected_type = "tag"
+        confidence = max(confidence, 0.78)
 
     result = {
         "type": detected_type,
         "confidence": confidence,
         "text_preview": text_preview,
-        "items": _extract_food_items(full_text),
+        "items": extracted_items,
+        "expiry_dates": expiry_dates,
+        "needs_user_input": expected_type == "tag" and not extracted_items,
+        "prompt": (
+            "Expiry date detected. Please provide food name and quantity."
+            if expected_type == "tag" and expiry_dates and not extracted_items
+            else None
+        ),
     }
 
     if expected_type:
