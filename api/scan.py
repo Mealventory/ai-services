@@ -1,36 +1,35 @@
+# api/scan.py
 from typing import Annotated, Literal
-
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from datetime import date
+
 from services.classification_service import detect_food
 from services.ocr_service import detect_text_type
+from services.expiry_prediction_service import get_expiry_date  # your service
 
 router = APIRouter()
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
+
 @router.post(
     "/",
-    responses={
-        400: {"description": "Invalid request payload"},
-        413: {"description": "Image exceeds max size"},
-        415: {"description": "Unsupported media type"},
-    },
+    responses={400: {"description": "Invalid request payload"},
+               413: {"description": "Image exceeds max size"},
+               415: {"description": "Unsupported media type"}}
 )
 async def scan_image(
     mode: Annotated[Literal["food", "tag", "receipt"], Form(...)],
     file: Annotated[UploadFile, File(...)],
 ):
     if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp",
-        )
+        raise HTTPException(status_code=415,
+                            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp")
 
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
-
     if len(content) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
 
@@ -74,16 +73,6 @@ async def scan_image(
             "text_preview": text_result["text_preview"],
         }
 
-    if text_result["type"] == "unknown":
-        return {
-            "type": "unknown",
-            "requested_type": mode,
-            "confidence": 0.0,
-            "items": [],
-            "message": "OCR unavailable or no readable text detected.",
-            "error": text_result.get("error"),
-        }
-
     return {
         "type": text_result["type"],
         "requested_type": mode,
@@ -97,28 +86,28 @@ async def scan_image(
     }
 
 
-@router.post(
-    "/detect-food",
-    responses={
-        400: {"description": "Invalid request payload"},
-        415: {"description": "Unsupported media type"},
-    },
-)
-async def detect_food_legacy(file: Annotated[UploadFile, File(...)]):
-    """Backward-compatible endpoint expected by backend integrations."""
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp",
-        )
-    content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="Uploaded image is empty")
+@router.post("/predict-expiry")
+async def predict_expiry(
+    name: str,
+    avg_shelf_life_days: int,
+    temperature: float = 20.0,
+    humidity: float = 50.0,
+    purchase_date: date = date.today()
+):
+    """
+    Predict expiry date for a food item.
+    """
+    food_data = {
+        "avg_shelf_life_days": avg_shelf_life_days,
+        "temperature": temperature,
+        "humidity": humidity,
+        "purchase_date": purchase_date.strftime("%Y-%m-%d"),
+    }
 
-    items = await detect_food(content)
+    predicted_expiry = get_expiry_date(food_data)
+
     return {
-        "type": "food" if items else "unknown",
-        "items": [item["name"] for item in items],
-        "item_details": items,
-        "confidence": max((item["confidence"] for item in items), default=0.0),
+        "name": name,
+        "purchase_date": purchase_date,
+        "predicted_expiry_date": predicted_expiry
     }

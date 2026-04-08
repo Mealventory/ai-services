@@ -20,13 +20,13 @@ googleapis-common-protos==1.73.0
 grpcio==1.78.0
 grpcio-status==1.78.0
 h11==0.16.0
-h5py==3.14.0
+
 idna==3.11
-keras==3.13.2
-libclang==18.1.1
+
+
 markdown-it-py==4.0.0
 mdurl==0.1.2
-ml_dtypes==0.5.4
+
 namex==0.1.0
 numpy==2.4.3
 opt_einsum==3.4.0
@@ -46,7 +46,7 @@ rich==14.3.3
 setuptools==82.0.1
 six==1.17.0
 starlette==0.52.1
-tensorflow==2.21.0
+
 termcolor==3.3.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
