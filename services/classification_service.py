@@ -31,6 +31,13 @@ FOOD_KEYWORDS = {
     "beef",
     "fish",
     "cheese",
+    "fig",
+    "pomegranate",
+    "pineapple",
+    "watermelon",
+    "pepper",
+    "cabbage",
+    "artichoke",
 }
 
 FOOD_LABEL_ALIASES = {
