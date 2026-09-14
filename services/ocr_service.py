@@ -5,6 +5,7 @@ import re
 from google.cloud import vision
 
 from config import settings
+from services.expiry_dates import extract_expiry_dates as _extract_expiry_dates
 
 
 def _configure_google_credentials():
@@ -110,12 +111,7 @@ FOOD_ALIASES = {
     "spinach": [r"\bspinach\b", r"\bspnch\b"],
 }
 
-EXPIRY_PATTERNS = [
-    r"\b(?:exp(?:iry)?|best\s*before|use\s*by|bb)[:\s\-]*([a-z]{3,9}\s+\d{1,2}(?:,?\s*\d{2,4})?)",
-    r"\b(?:exp(?:iry)?|best\s*before|use\s*by|bb)[:\s\-]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})",
-    r"\b([a-z]{3,9}\s+\d{1,2}\s+\d{2,4})\b",
-    r"\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b",
-]
+
 
 
 def _keyword_hits(text: str, keywords: set[str]) -> int:
@@ -176,19 +172,6 @@ def _extract_food_items(full_text: str) -> list[dict]:
     return items
 
 
-def _extract_expiry_dates(full_text: str) -> list[str]:
-    normalized = " ".join(full_text.lower().split())
-    found: list[str] = []
-    seen: set[str] = set()
-
-    for pattern in EXPIRY_PATTERNS:
-        for match in re.findall(pattern, normalized, flags=re.IGNORECASE):
-            candidate = match.strip().upper()
-            if candidate and candidate not in seen:
-                seen.add(candidate)
-                found.append(candidate)
-
-    return found
 
 
 async def detect_text_type(image_bytes, expected_type: str | None = None):
