@@ -15,6 +15,10 @@ FOOD_KEYWORDS = {
     "banana",
     "apple",
     "orange",
+    "mandarin",
+    "clementine",
+    "tangerine",
+    "citrus fruit",
     "lemon",
     "broccoli",
     "pizza",
@@ -46,6 +50,11 @@ FOOD_KEYWORDS = {
 }
 
 FOOD_LABEL_ALIASES = {
+    "mandarin orange": "mandarin",
+    "mandarins": "mandarin",
+    "clementines": "clementine",
+    "tangerines": "tangerine",
+    "citrus": "citrus fruit",
     "ginger root": "ginger",
     "gingerroot": "ginger",
     "figs": "fig",
@@ -107,6 +116,8 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
 
     for label in response.label_annotations:
         normalized = _normalize_label(label.description)
+        if normalized == "orange":
+            normalized = "citrus fruit"
         if normalized in FOOD_KEYWORDS and normalized not in seen and float(label.score) >= 0.50:
             seen.add(normalized)
             items.append(
@@ -118,6 +129,9 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
                 }
             )
 
+    # Generic and specific labels describe the same fruit, not extra items.
+    if any(item['name'] in {'mandarin', 'clementine', 'tangerine'} for item in items):
+        items = [item for item in items if item['name'] != 'citrus fruit']
     return items
 
 
@@ -144,6 +158,8 @@ async def detect_food(image_bytes):
     # These are guardrails, not a calibrated guarantee of recognition accuracy.
     if normalized not in FOOD_KEYWORDS or float(confidence) < 0.80 or float(confidence) - runner_up < 0.30:
         return []
+    if normalized == "orange":
+        normalized = "citrus fruit"
     return [{
         "name": normalized, "label": label,
         "confidence": round(float(confidence), 4), "source": "classification",

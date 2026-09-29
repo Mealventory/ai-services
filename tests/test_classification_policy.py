@@ -34,3 +34,11 @@ class ClassificationPolicyTests(unittest.TestCase):
         self.assertEqual(self.detect([], [('id', 'table', .85), ('id', 'lemon', .12)]), [])
     def test_strong_classifier_fallback(self):
         self.assertEqual(self.detect([], [('id', 'fig', .9), ('id', 'lemon', .05)])[0]['name'], 'fig')
+
+    def test_specific_citrus_labels_are_preserved(self):
+        for label, expected in [('mandarin orange', 'mandarin'), ('Clementines', 'clementine'), ('Tangerines', 'tangerine'), ('Citrus', 'citrus fruit')]:
+            self.assertEqual(self.module._normalize_label(label), expected)
+
+    def test_visual_orange_fallback_is_presented_as_citrus(self):
+        result = self.detect([], [('id', 'orange', .95), ('id', 'lemon', .02)])
+        self.assertEqual(result[0]['name'], 'citrus fruit')
