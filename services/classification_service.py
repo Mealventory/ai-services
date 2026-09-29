@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import List
 
 from google.cloud import vision
@@ -7,6 +8,8 @@ from models.produce_classifier import classify_image
 from services.image_preprocessing import preprocess_for_classification
 
 FOOD_KEYWORDS = {
+    "avocado",
+    "ginger",
     "yogurt",
     "yoghurt",
     "banana",
@@ -43,6 +46,10 @@ FOOD_KEYWORDS = {
 }
 
 FOOD_LABEL_ALIASES = {
+    "ginger root": "ginger",
+    "gingerroot": "ginger",
+    "figs": "fig",
+    "avocados": "avocado",
     "granny smith": "apple",
     "red delicious": "apple",
     "gala": "apple",
@@ -63,7 +70,7 @@ FOOD_LABEL_ALIASES = {
 def _map_alias(label_text: str) -> str | None:
     lowered = label_text.lower()
     for alias, target in FOOD_LABEL_ALIASES.items():
-        if alias in lowered:
+        if re.search(r"\b" + re.escape(alias) + r"\b", lowered):
             return target
     return None
 
@@ -100,7 +107,7 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
 
     for label in response.label_annotations:
         normalized = _normalize_label(label.description)
-        if normalized in FOOD_KEYWORDS and normalized not in seen and float(label.score) >= 0.45:
+        if normalized in FOOD_KEYWORDS and normalized not in seen and float(label.score) >= 0.50:
             seen.add(normalized)
             items.append(
                 {
@@ -115,31 +122,29 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
 
 
 async def detect_food(image_bytes):
-    processed = preprocess_for_classification(image_bytes)
+    # ImageNet is a general classifier with incomplete grocery coverage. A weak
+    # food guess must never suppress the broader Vision detector.
+    vision_items = await asyncio.to_thread(_detect_food_with_vision_labels, image_bytes)
+    if vision_items:
+        return vision_items
+
     try:
+        processed = preprocess_for_classification(image_bytes)
         predictions = await asyncio.to_thread(classify_image, processed)
     except Exception:
-        predictions = []
+        return []
 
-    items: List[dict] = []
-    seen: set[str] = set()
-
-    for _, label, confidence in predictions:
-        normalized = _normalize_label(label)
-        if normalized in FOOD_KEYWORDS and confidence > 0.2 and normalized not in seen:
-            seen.add(normalized)
-            items.append(
-                {
-                    "name": normalized,
-                    "label": label,
-                    "confidence": round(float(confidence), 4),
-                    "source": "classification",
-                }
-            )
-
-    if items:
-        return items
-
-    # Fallback for common user photos when classification model is uncertain.
-    fallback_items = await asyncio.to_thread(_detect_food_with_vision_labels, image_bytes)
-    return fallback_items
+    if not predictions:
+        return []
+    ranked = sorted(predictions, key=lambda prediction: float(prediction[2]), reverse=True)
+    _, label, confidence = ranked[0]
+    runner_up = float(ranked[1][2]) if len(ranked) > 1 else 0.0
+    normalized = _normalize_label(label)
+    # Conservative fallback: only the overall winner, with a clear margin.
+    # These are guardrails, not a calibrated guarantee of recognition accuracy.
+    if normalized not in FOOD_KEYWORDS or float(confidence) < 0.80 or float(confidence) - runner_up < 0.30:
+        return []
+    return [{
+        "name": normalized, "label": label,
+        "confidence": round(float(confidence), 4), "source": "classification",
+    }]
