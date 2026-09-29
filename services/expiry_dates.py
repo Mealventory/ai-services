@@ -17,9 +17,8 @@ _CANADIAN_MONTH = '(?:' + '|'.join(_CANADIAN_MONTHS) + ')'
 _MONTH = '(?:' + '|'.join(sorted(_MONTHS, key=len, reverse=True)) + ')'
 _YEAR = r'(?:\d{4}|\d{2})'
 _DATE = rf'(?:{_YEAR}[ \t]+{_CANADIAN_MONTH}[ \t]+\d{{1,2}}|\d{{4}}[-/]\d{{1,2}}[-/]\d{{1,2}}|\d{{1,2}}[-/]\d{{1,2}}[-/]{_YEAR}|{_MONTH}\.?[ \t]+\d{{1,2}},?[ \t]+{_YEAR}|\d{{1,2}}[ \t]+{_MONTH}\.?[ \t]+{_YEAR})'
-# A label may be followed by a date on the same line or the next line only.
 _LABELLED_DATE = re.compile(
-    rf'\b(?:best[ \t]+before|meilleur[ \t]+avant|use[ \t]+by|expiry|expiration|expires|exp|bb)\b'
+    rf'\b(?:best[ \t]+before|m[ei]+ll?e?u?r[ \t]+avant|use[ \t]+by|expiry|expiration|expires|exp|bb)\b'
     rf'(?:[ \t]+date\b)?[ \t.:\-]*(?:\r?\n[ \t]*)?'
     rf'(?P<date>{_DATE})(?![\w/\-])', re.IGNORECASE,
 )
@@ -66,4 +65,27 @@ def extract_expiry_dates(text: str) -> list[str]:
         if parsed is not None and parsed not in seen:
             seen.add(parsed)
             found.append(candidate)
+
+    if not found:
+        label_match = re.search(
+            r'\b(?:best[ \t]+before|m[ei]+ll?e?u?r[ \t]+avant|use[ \t]+by|expiry|expiration|expires|exp|bb)\b',
+            text,
+            re.IGNORECASE,
+        )
+        if label_match:
+            canadian_match = re.search(
+                rf'\b({_CANADIAN_MONTH})[ \t]+(\d{{1,2}})\b',
+                text,
+                re.IGNORECASE,
+            )
+            year_match = re.search(r'\b(202\d|203\d)\b', text)
+            if canadian_match and year_match:
+                c_month = canadian_match.group(1).upper()
+                c_day = canadian_match.group(2)
+                candidate = f"{year_match.group(1)} {c_month} {c_day}"
+                parsed = _validated_date(candidate)
+                if parsed is not None and parsed not in seen:
+                    seen.add(parsed)
+                    found.append(candidate)
+
     return found

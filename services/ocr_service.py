@@ -45,10 +45,14 @@ TAG_KEYWORDS = {
     "sodium",
     "exp",
     "best before",
+    "meilleur avant",
+    "melleur avant",
     "use by",
     "lot",
     "barcode",
     "net wt",
+    "bb",
+    "ma",
 }
 
 FOOD_TERMS = {
@@ -81,13 +85,15 @@ FOOD_TERMS = {
     "avocado",
     "pasta",
     "beans",
+    "protein",
+    "shake",
 }
 
 FOOD_ALIASES = {
     "apple": [r"\bapples?\b", r"\bappl\b"],
     "banana": [r"\bbananas?\b", r"\bbnan\b"],
     "orange": [r"\boranges?\b", r"\borg\b"],
-    "milk": [r"\bmlk\b", r"\bwhole\s+milk\b", r"\b2%\s+milk\b"],
+    "milk": [r"\bmlk\b", r"\bwhole\s+milk\b", r"\b2%\s+milk\b", r"\blait\b"],
     "bread": [r"\bbread\b", r"\bbrd\b"],
     "rice": [r"\brice\b", r"\brce\b"],
     "chicken": [
@@ -109,6 +115,14 @@ FOOD_ALIASES = {
     "tomato": [r"\btomatoes?\b", r"\btomato\b"],
     "pepper": [r"\bpepper(s)?\b", r"\bpepp\b"],
     "spinach": [r"\bspinach\b", r"\bspnch\b"],
+    "protein": [
+        r"\bprotein(e)?s?\b",
+        r"\bprujeine\b",
+        r"\bcore\s*power\b",
+    ],
+    "shake": [
+        r"\bshake(s)?\b",
+    ],
 }
 
 

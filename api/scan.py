@@ -68,7 +68,7 @@ async def scan_image(
             "requested_type": mode,
             "detected_type": text_result["type"],
             "confidence": text_result["confidence"],
-            "items": text_result.get("items", []),
+            "items": [item["name"] for item in text_result.get("items", [])],
             "message": f"Image looks like '{text_result['type']}', not '{mode}'.",
             "text_preview": text_result["text_preview"],
         }
