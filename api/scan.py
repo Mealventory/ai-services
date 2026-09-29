@@ -35,6 +35,12 @@ async def scan_image(
 
     if mode == "food":
         items = await detect_food(content)
+        if not items:
+            # Packaging often has readable food names even when visual labels are generic.
+            packaging = await detect_text_type(content)
+            if packaging and packaging.get('error'):
+                raise HTTPException(503, detail='Product recognition is unavailable. Check Google Vision configuration.')
+            items = packaging.get('items', []) if packaging else []
         if items:
             return {
                 "type": "food",
@@ -53,6 +59,8 @@ async def scan_image(
         }
 
     text_result = await detect_text_type(content, expected_type=mode)
+    if text_result and text_result.get('error'):
+        raise HTTPException(503, detail='Text recognition is unavailable. Check Google Vision credentials, API access and billing.')
     if not text_result:
         return {
             "type": "unknown",

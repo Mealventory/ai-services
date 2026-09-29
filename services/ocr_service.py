@@ -191,7 +191,7 @@ def _extract_food_items(full_text: str) -> list[dict]:
 async def detect_text_type(image_bytes, expected_type: str | None = None):
     image = vision.Image(content=image_bytes)
     try:
-        response = await asyncio.to_thread(client.text_detection, image=image)
+        response = await asyncio.to_thread(client.document_text_detection, image=image)
     except Exception as exc:
         result = {
             "type": "unknown",

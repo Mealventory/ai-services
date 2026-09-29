@@ -7,6 +7,8 @@ from models.produce_classifier import classify_image
 from services.image_preprocessing import preprocess_for_classification
 
 FOOD_KEYWORDS = {
+    "yogurt",
+    "yoghurt",
     "banana",
     "apple",
     "orange",
@@ -114,7 +116,10 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
 
 async def detect_food(image_bytes):
     processed = preprocess_for_classification(image_bytes)
-    predictions = await asyncio.to_thread(classify_image, processed)
+    try:
+        predictions = await asyncio.to_thread(classify_image, processed)
+    except Exception:
+        predictions = []
 
     items: List[dict] = []
     seen: set[str] = set()
