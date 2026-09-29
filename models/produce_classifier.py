@@ -20,8 +20,10 @@ import pandas as pd
 from datetime import datetime
 
 class ExpiryClassifier:
-    def __init__(self, model_path="scripts/expiry_predictor.pkl"):
+    def __init__(self, model_path=None):
         
+        from pathlib import Path
+        model_path = model_path or Path(__file__).resolve().parents[1] / "Scripts" / "expiry_predictor.pkl"
         self.model = joblib.load(model_path)
 
     def predict_days_to_expiry(self, food_data):

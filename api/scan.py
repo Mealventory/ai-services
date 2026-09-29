@@ -100,11 +100,12 @@ async def predict_expiry(
     avg_shelf_life_days: int,
     temperature: float = 20.0,
     humidity: float = 50.0,
-    purchase_date: date = date.today()
+    purchase_date: date | None = None
 ):
     """
     Predict expiry date for a food item.
     """
+    purchase_date = purchase_date or date.today()
     food_data = {
         "avg_shelf_life_days": avg_shelf_life_days,
         "temperature": temperature,
