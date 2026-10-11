@@ -16,7 +16,24 @@ def _configure_google_credentials():
 
 
 _configure_google_credentials()
-client = vision.ImageAnnotatorClient()
+client = None
+
+
+def vision_credentials_configured() -> bool:
+    """Return whether an explicit, readable Google credentials file is configured.
+
+    This intentionally does not contact Google or resolve ambient credentials;
+    readiness probes must remain local and predictable.
+    """
+    configured = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    return bool(configured and os.path.isfile(configured) and os.access(configured, os.R_OK))
+
+
+def _get_client():
+    global client
+    if client is None:
+        client = vision.ImageAnnotatorClient()
+    return client
 
 RECEIPT_KEYWORDS = {
     "subtotal",
@@ -191,7 +208,7 @@ def _extract_food_items(full_text: str) -> list[dict]:
 async def detect_text_type(image_bytes, expected_type: str | None = None):
     image = vision.Image(content=image_bytes)
     try:
-        response = await asyncio.to_thread(client.document_text_detection, image=image)
+        response = await asyncio.to_thread(_get_client().document_text_detection, image=image)
     except Exception as exc:
         result = {
             "type": "unknown",
