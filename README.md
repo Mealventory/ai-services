@@ -32,6 +32,21 @@ The overview above is retained from the local repository. The current code uses
 Google Vision and Keras MobileNetV2; it does not implement every capability in
 the target design below. See [SETUP.md](SETUP.md) for environment setup.
 
+## Runtime health probes
+
+- `GET /` is the cheap liveness probe. It confirms the FastAPI process responds
+  and does not call Google APIs.
+- `GET /ready` is the scan readiness probe. It returns 200 with
+  `{"status":"ready","checks":{"model":"ready","vision":"configured"}}`
+  when MobileNetV2 is loaded and an explicit, readable Google credentials file
+  is configured. Missing required dependencies return 503 with `degraded` or
+  `unavailable` status. The response contains dependency states only; it never
+  includes credential values or filesystem paths.
+
+Readiness checks local configuration only. It does not verify Google Vision
+network access, API enablement, billing, or credential validity by making a
+billable request. Check those separately when diagnosing live scan failures.
+
 ---
 
 # Mealventory AI & Vision Microservice: Target Final State & Purpose
