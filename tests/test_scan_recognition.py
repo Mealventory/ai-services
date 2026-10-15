@@ -17,6 +17,7 @@ class RecognitionTests(unittest.TestCase):
             'services.classification_service': types.SimpleNamespace(detect_food=self.food),
             'services.ocr_service': types.SimpleNamespace(detect_text_type=self.ocr),
             'services.expiry_prediction_service': types.SimpleNamespace(get_expiry_date=lambda _: None),
+            'services.image_preprocessing': types.SimpleNamespace(preprocess_image_for_mode=lambda b, **kw: b),
         }
         with patch.dict(sys.modules, mocks):
             spec = importlib.util.spec_from_file_location('scan_under_test', 'api/scan.py')

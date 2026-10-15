@@ -6,6 +6,8 @@ from datetime import date
 from services.classification_service import detect_food
 from services.ocr_service import detect_text_type
 from services.expiry_prediction_service import get_expiry_date  # your service
+from services.image_preprocessing import preprocess_image_for_mode
+from schemas.scan import ScanResponse, ExpiryPredictionResponse
 
 router = APIRouter()
 
@@ -15,6 +17,7 @@ MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 @router.post(
     "/",
+    response_model=ScanResponse,
     responses={400: {"description": "Invalid request payload"},
                413: {"description": "Image exceeds max size"},
                415: {"description": "Unsupported media type"}}
@@ -32,6 +35,12 @@ async def scan_image(
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+
+    try:
+        content = preprocess_image_for_mode(content, mode=mode)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Corrupt or undecodable image file. Please provide a valid photo.")
+
 
     if mode == "food":
         items = await detect_food(content)
@@ -94,7 +103,7 @@ async def scan_image(
     }
 
 
-@router.post("/predict-expiry")
+@router.post("/predict-expiry", response_model=ExpiryPredictionResponse)
 async def predict_expiry(
     name: str,
     avg_shelf_life_days: int,
@@ -120,3 +129,51 @@ async def predict_expiry(
         "purchase_date": purchase_date,
         "predicted_expiry_date": predicted_expiry
     }
+
+
+@router.post(
+    "/multi",
+    response_model=ScanResponse,
+    responses={400: {"description": "Invalid request payload"},
+               413: {"description": "Image exceeds max size"},
+               415: {"description": "Unsupported media type"}}
+)
+async def scan_multi(
+    file: Annotated[UploadFile, File(...)],
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=415,
+                            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty")
+    if len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+
+    try:
+        content = preprocess_image_for_mode(content, mode="food")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Corrupt or undecodable image file. Please provide a valid photo.")
+
+    items = await detect_food(content)
+    if not items:
+        packaging = await detect_text_type(content)
+        items = packaging.get('items', []) if packaging else []
+
+    if items:
+        return {
+            "type": "multi",
+            "requested_type": "multi",
+            "confidence": max(item["confidence"] for item in items),
+            "items": [item["name"] for item in items],
+            "item_details": items,
+        }
+
+    return {
+        "type": "unknown",
+        "requested_type": "multi",
+        "confidence": 0.0,
+        "items": [],
+        "message": "No food items detected.",
+    }
