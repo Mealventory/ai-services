@@ -100,8 +100,14 @@ def _normalize_label(label: str) -> str:
     return lowered.strip()
 
 
+from utils.confidence_scoring import evaluate_detection, RecognitionSource
+
+
 def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
     """Fallback detector for real-world photos where classifier confidence is low."""
+    from services.mock_engine import is_mock_vision_active, get_mock_food_items
+    if is_mock_vision_active():
+        return get_mock_food_items()
     try:
         client = vision.ImageAnnotatorClient()
         image = vision.Image(content=image_bytes)
@@ -118,16 +124,16 @@ def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
         normalized = _normalize_label(label.description)
         if normalized == "orange":
             normalized = "citrus fruit"
-        if normalized in FOOD_KEYWORDS and normalized not in seen and float(label.score) >= 0.50:
-            seen.add(normalized)
-            items.append(
-                {
-                    "name": normalized,
-                    "label": label.description,
-                    "confidence": round(float(label.score), 4),
-                    "source": "vision_label",
-                }
+        if normalized in FOOD_KEYWORDS and normalized not in seen:
+            evaluation = evaluate_detection(
+                name=normalized,
+                raw_confidence=float(label.score),
+                source=RecognitionSource.VISION_LABEL,
+                label=label.description,
             )
+            if evaluation["is_accepted"]:
+                seen.add(normalized)
+                items.append(evaluation)
 
     # Generic and specific labels describe the same fruit, not extra items.
     if any(item['name'] in {'mandarin', 'clementine', 'tangerine'} for item in items):
@@ -160,7 +166,12 @@ async def detect_food(image_bytes):
         return []
     if normalized == "orange":
         normalized = "citrus fruit"
-    return [{
-        "name": normalized, "label": label,
-        "confidence": round(float(confidence), 4), "source": "classification",
-    }]
+    evaluation = evaluate_detection(
+        name=normalized,
+        raw_confidence=float(confidence),
+        source=RecognitionSource.CLASSIFICATION,
+        runner_up_confidence=runner_up,
+        label=label,
+    )
+    return [evaluation]
+

@@ -1,0 +1,598 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mealventory AI Service",
+    "description": "AI microservice for OCR and produce classification",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/scan/": {
+      "post": {
+        "tags": [
+          "Scan"
+        ],
+        "summary": "Scan Image",
+        "operationId": "scan_image_scan__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_scan_image_scan__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload"
+          },
+          "413": {
+            "description": "Image exceeds max size"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scan/predict-expiry": {
+      "post": {
+        "tags": [
+          "Scan"
+        ],
+        "summary": "Predict Expiry",
+        "description": "Predict expiry date for a food item.",
+        "operationId": "predict_expiry_scan_predict_expiry_post",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "avg_shelf_life_days",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Avg Shelf Life Days"
+            }
+          },
+          {
+            "name": "temperature",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 20.0,
+              "title": "Temperature"
+            }
+          },
+          {
+            "name": "humidity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 50.0,
+              "title": "Humidity"
+            }
+          },
+          {
+            "name": "purchase_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Purchase Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpiryPredictionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scan/multi": {
+      "post": {
+        "tags": [
+          "Scan"
+        ],
+        "summary": "Scan Multi",
+        "operationId": "scan_multi_scan_multi_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_scan_multi_scan_multi_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload"
+          },
+          "413": {
+            "description": "Image exceeds max size"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness Check",
+        "description": "Report local scan dependency readiness without making remote API calls.",
+        "operationId": "readiness_check_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_scan_image_scan__post": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "food",
+              "tag",
+              "receipt"
+            ],
+            "title": "Mode"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "file"
+        ],
+        "title": "Body_scan_image_scan__post"
+      },
+      "Body_scan_multi_scan_multi_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_scan_multi_scan_multi_post"
+      },
+      "ExpiryPredictionResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Food item name"
+          },
+          "purchase_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Purchase Date",
+            "description": "Purchase date used for prediction"
+          },
+          "predicted_expiry_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ],
+            "title": "Predicted Expiry Date",
+            "description": "Predicted expiration date"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name",
+          "purchase_date",
+          "predicted_expiry_date"
+        ],
+        "title": "ExpiryPredictionResponse",
+        "description": "Response model for heuristic expiry prediction."
+      },
+      "FoodItemDetail": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Normalized lowercase food item name"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "description": "Detection confidence score"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Raw label description from model or vision"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Detection pipeline source (vision_label, classification, mock_vision, ocr)"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Predicted food category"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity",
+            "description": "Extracted numerical quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit",
+            "description": "Extracted unit of measurement"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price",
+            "description": "Extracted item price if detected on receipt"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "description": "Flag indicating detection is uncertain and requires user review",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name",
+          "confidence"
+        ],
+        "title": "FoodItemDetail",
+        "description": "Granular metadata for detected food items."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ScanResponse": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "food",
+              "tag",
+              "receipt",
+              "mismatch",
+              "unknown",
+              "multi"
+            ],
+            "title": "Type",
+            "description": "Detected scan result classification or outcome"
+          },
+          "requested_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Type",
+            "description": "Mode requested by client"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "description": "Overall detection confidence score",
+            "default": 0.0
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "description": "True if any detected item or the overall scan is uncertain",
+            "default": false
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Array of detected food item names"
+          },
+          "item_details": {
+            "items": {
+              "$ref": "#/components/schemas/FoodItemDetail"
+            },
+            "type": "array",
+            "title": "Item Details",
+            "description": "Structured metadata per item"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Explanatory message for unknown, mismatch, or low confidence"
+          },
+          "detected_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detected Type",
+            "description": "Detected mode in case of mode mismatch"
+          },
+          "text_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Preview",
+            "description": "Truncated preview of extracted OCR text"
+          },
+          "expiry_dates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expiry Dates",
+            "description": "List of raw or formatted expiry date strings"
+          },
+          "needs_user_input": {
+            "type": "boolean",
+            "title": "Needs User Input",
+            "description": "Flag indicating user clarification needed (e.g. tag without food name)",
+            "default": false
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Instruction prompt presented to user when needs_user_input is True"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ScanResponse",
+        "description": "Canonical versioned response for all scan modes (food, receipt, tag, multi)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
