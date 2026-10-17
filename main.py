@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from api.scan import router as scan_router
+from api.barcode import router as barcode_router
 from fastapi.responses import JSONResponse
 from services.ocr_service import vision_credentials_configured
 from models import produce_classifier
@@ -10,6 +11,7 @@ app = FastAPI(
 )
 
 app.include_router(scan_router, prefix="/scan", tags=["Scan"])
+app.include_router(barcode_router, prefix="/barcode", tags=["Barcode"])
 
 
 @app.get("/")

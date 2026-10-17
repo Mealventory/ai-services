@@ -47,6 +47,19 @@ Readiness checks local configuration only. It does not verify Google Vision
 network access, API enablement, billing, or credential validity by making a
 billable request. Check those separately when diagnosing live scan failures.
 
+## Barcode lookup
+
+`GET /barcode/{barcode}` resolves UPC and EAN barcodes through OpenFoodFacts.
+The response includes the product name, brand, category, storage zone, and
+packaging image when OpenFoodFacts has them. Successful and not-found results
+are cached in memory per AI-service process. For refrigerated milk, the response
+also includes opened-product guidance (`shelf_life_days: 3`, after opening);
+unopened milk should follow the package best-before date. A warm cached lookup
+is expected to be fast, while a first lookup depends on OpenFoodFacts response
+time. A small curated Kroger fallback handles UPC `0001111090642` because that
+product is not currently listed in OpenFoodFacts; its response uses
+`source: "kroger_fallback"`.
+
 ---
 
 # Mealventory AI & Vision Microservice: Target Final State & Purpose
