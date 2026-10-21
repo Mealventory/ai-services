@@ -128,7 +128,7 @@ ai-services/
 │   └── logging.py                    # Structured logging
 │
 ├── data/
-│   └── foodkeeper.json               # Seeded USDA FoodKeeper reference database
+│   └── foodkeeper.json               # Normalized USDA FoodKeeper snapshot (613 entries)
 │
 ├── models/                           # Pydantic v2 Contract Schemas
 │   ├── detection.py                  # DetectedItem, BoundingBox, ScanResponse
@@ -149,6 +149,23 @@ ai-services/
 ├── Dockerfile                        # Multi-stage image with OpenCV/GL dependencies
 └── requirements.txt                  # Locked Python 3.11 requirements
 ```
+
+## FoodKeeper expiry endpoint
+
+`POST /foodkeeper/predict-expiry` accepts `name`, `storage_zone` (`pantry`,
+`fridge`, or `freezer`), and an optional `purchase_date`. It returns a
+purchase-date-based estimate only when the best `token_sort_ratio` match is
+above 75 and there is no tied food-group match. General preparation words such
+as “fresh” and “fillet” are removed before matching. Published ranges use the
+upper endpoint; month, week, and year values convert to 30, 7, and 365 days.
+Text-only guidance and unsupported zones return `matched: false`.
+
+The checked-in snapshot contains 613 usable food groups from USDA FoodKeeper
+data version 128 (the USDA English JSON snapshot dated September 7, 2018).
+It is a source-linked, offline snapshot; the importer at
+`Scripts/import_foodkeeper.py` converts the USDA workbook JSON export into the
+runtime format. Shelf-life estimates describe storage guidance and quality,
+not a guarantee that food is safe to eat.
 
 ---
 
