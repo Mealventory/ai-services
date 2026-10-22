@@ -5,7 +5,7 @@ from datetime import date
 
 from services.classification_service import detect_food
 from services.ocr_service import detect_text_type
-from services.expiry_prediction_service import get_expiry_date  # your service
+from services.expiry_prediction_service import get_expiry_date
 from services.image_preprocessing import preprocess_image_for_mode
 from schemas.scan import ScanResponse, ExpiryPredictionResponse
 
@@ -50,10 +50,13 @@ async def scan_image(
                 raise HTTPException(503, detail='Product recognition is unavailable. Check Google Vision configuration.')
             items = packaging.get('items', []) if packaging else []
         if items:
+            conf = max(item["confidence"] for item in items)
+            needs_rev = any(item.get("needs_review", False) for item in items) or conf < 0.80
             return {
                 "type": "food",
                 "requested_type": mode,
-                "confidence": max(item["confidence"] for item in items),
+                "confidence": conf,
+                "needs_review": needs_rev,
                 "items": [item["name"] for item in items],
                 "item_details": items,
             }
@@ -62,6 +65,7 @@ async def scan_image(
             "type": "unknown",
             "requested_type": mode,
             "confidence": 0.0,
+            "needs_review": True,
             "items": [],
             "message": "No food item matched with enough confidence. Try a clearer image.",
         }
@@ -74,6 +78,7 @@ async def scan_image(
             "type": "unknown",
             "requested_type": mode,
             "confidence": 0.0,
+            "needs_review": True,
             "items": [],
             "message": "No readable text detected.",
         }
@@ -84,17 +89,22 @@ async def scan_image(
             "requested_type": mode,
             "detected_type": text_result["type"],
             "confidence": text_result["confidence"],
+            "needs_review": True,
             "items": [item["name"] for item in text_result.get("items", [])],
             "message": f"Image looks like '{text_result['type']}', not '{mode}'.",
             "text_preview": text_result["text_preview"],
         }
 
+    details = text_result.get("items", [])
+    conf = text_result["confidence"]
+    needs_rev = any(item.get("needs_review", False) for item in details) or conf < 0.80 or text_result.get("needs_user_input", False)
     return {
         "type": text_result["type"],
         "requested_type": mode,
-        "confidence": text_result["confidence"],
-        "items": [item["name"] for item in text_result.get("items", [])],
-        "item_details": text_result.get("items", []),
+        "confidence": conf,
+        "needs_review": needs_rev,
+        "items": [item["name"] for item in details],
+        "item_details": details,
         "text_preview": text_result["text_preview"],
         "expiry_dates": text_result.get("expiry_dates", []),
         "needs_user_input": text_result.get("needs_user_input", False),
@@ -161,10 +171,13 @@ async def scan_multi(
         items = packaging.get('items', []) if packaging else []
 
     if items:
+        conf = max(item["confidence"] for item in items)
+        needs_rev = any(item.get("needs_review", False) for item in items) or conf < 0.80
         return {
             "type": "multi",
             "requested_type": "multi",
-            "confidence": max(item["confidence"] for item in items),
+            "confidence": conf,
+            "needs_review": needs_rev,
             "items": [item["name"] for item in items],
             "item_details": items,
         }
@@ -173,6 +186,7 @@ async def scan_multi(
         "type": "unknown",
         "requested_type": "multi",
         "confidence": 0.0,
+        "needs_review": True,
         "items": [],
         "message": "No food items detected.",
     }

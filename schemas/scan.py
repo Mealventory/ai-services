@@ -19,6 +19,7 @@ class FoodItemDetail(BaseModel):
     quantity: Optional[Union[float, int]] = Field(default=None, description="Extracted numerical quantity")
     unit: Optional[str] = Field(default=None, description="Extracted unit of measurement")
     price: Optional[float] = Field(default=None, description="Extracted item price if detected on receipt")
+    needs_review: bool = Field(default=False, description="Flag indicating detection is uncertain and requires user review")
 
 
 class ScanResponse(BaseModel):
@@ -28,6 +29,7 @@ class ScanResponse(BaseModel):
     type: ScanResultType = Field(description="Detected scan result classification or outcome")
     requested_type: Optional[str] = Field(default=None, description="Mode requested by client")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Overall detection confidence score")
+    needs_review: bool = Field(default=False, description="True if any detected item or the overall scan is uncertain")
     items: List[str] = Field(default_factory=list, description="Array of detected food item names")
     item_details: List[FoodItemDetail] = Field(default_factory=list, description="Structured metadata per item")
     message: Optional[str] = Field(default=None, description="Explanatory message for unknown, mismatch, or low confidence")
@@ -36,6 +38,7 @@ class ScanResponse(BaseModel):
     expiry_dates: List[str] = Field(default_factory=list, description="List of raw or formatted expiry date strings")
     needs_user_input: bool = Field(default=False, description="Flag indicating user clarification needed (e.g. tag without food name)")
     prompt: Optional[str] = Field(default=None, description="Instruction prompt presented to user when needs_user_input is True")
+
 
 
 class ExpiryPredictionResponse(BaseModel):
