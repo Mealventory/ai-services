@@ -19,6 +19,9 @@ _configure_google_credentials()
 client = None
 
 
+from services.mock_engine import is_mock_vision_active, get_mock_text_result
+
+
 def vision_credentials_configured() -> bool:
     """Return whether an explicit, readable Google credentials file is configured.
 
@@ -27,6 +30,8 @@ def vision_credentials_configured() -> bool:
     """
     configured = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     return bool(configured and os.path.isfile(configured) and os.access(configured, os.R_OK))
+
+
 
 
 def _get_client():
@@ -212,6 +217,9 @@ def _extract_food_items(full_text: str) -> list[dict]:
 
 
 async def detect_text_type(image_bytes, expected_type: str | None = None):
+    if is_mock_vision_active():
+        return get_mock_text_result(expected_type)
+
     image = vision.Image(content=image_bytes)
     try:
         response = await asyncio.to_thread(_get_client().document_text_detection, image=image)

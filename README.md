@@ -47,6 +47,19 @@ Readiness checks local configuration only. It does not verify Google Vision
 network access, API enablement, billing, or credential validity by making a
 billable request. Check those separately when diagnosing live scan failures.
 
+## Barcode lookup
+
+`GET /barcode/{barcode}` resolves UPC and EAN barcodes through OpenFoodFacts.
+The response includes the product name, brand, category, storage zone, and
+packaging image when OpenFoodFacts has them. Successful and not-found results
+are cached in memory per AI-service process. For refrigerated milk, the response
+also includes opened-product guidance (`shelf_life_days: 3`, after opening);
+unopened milk should follow the package best-before date. A warm cached lookup
+is expected to be fast, while a first lookup depends on OpenFoodFacts response
+time. A small curated Kroger fallback handles UPC `0001111090642` because that
+product is not currently listed in OpenFoodFacts; its response uses
+`source: "kroger_fallback"`.
+
 ---
 
 # Mealventory AI & Vision Microservice: Target Final State & Purpose
@@ -115,7 +128,7 @@ ai-services/
 │   └── logging.py                    # Structured logging
 │
 ├── data/
-│   └── foodkeeper.json               # Seeded USDA FoodKeeper reference database
+│   └── foodkeeper.json               # Normalized USDA FoodKeeper snapshot (613 entries)
 │
 ├── models/                           # Pydantic v2 Contract Schemas
 │   ├── detection.py                  # DetectedItem, BoundingBox, ScanResponse
@@ -136,6 +149,23 @@ ai-services/
 ├── Dockerfile                        # Multi-stage image with OpenCV/GL dependencies
 └── requirements.txt                  # Locked Python 3.11 requirements
 ```
+
+## FoodKeeper expiry endpoint
+
+`POST /foodkeeper/predict-expiry` accepts `name`, `storage_zone` (`pantry`,
+`fridge`, or `freezer`), and an optional `purchase_date`. It returns a
+purchase-date-based estimate only when the best `token_sort_ratio` match is
+above 75 and there is no tied food-group match. General preparation words such
+as “fresh” and “fillet” are removed before matching. Published ranges use the
+upper endpoint; month, week, and year values convert to 30, 7, and 365 days.
+Text-only guidance and unsupported zones return `matched: false`.
+
+The checked-in snapshot contains 613 usable food groups from USDA FoodKeeper
+data version 128 (the USDA English JSON snapshot dated September 7, 2018).
+It is a source-linked, offline snapshot; the importer at
+`Scripts/import_foodkeeper.py` converts the USDA workbook JSON export into the
+runtime format. Shelf-life estimates describe storage guidance and quality,
+not a guarantee that food is safe to eat.
 
 ---
 
@@ -181,3 +211,20 @@ ai-services/
 - **Inference Latency**: < 1.5s for receipt OCR; < 1.0s for multi-item produce vision.
 - **JSON Schema Guarantee**: 100% adherence to Pydantic models through Gemini 1.5 Flash `response_schema` enforcement (eliminating malformed regex JSON failures).
 - **Graceful Fallback**: In the event of OCR ambiguity, the service preserves the raw text snippet and marks confidence as `< 0.70`, allowing the user to review and correct on the mobile client.
+
+---
+
+## 5. Scan Accuracy & Latency Benchmark Suite
+
+The repository includes a repeatable evaluation harness for measuring recognition quality, exact-match expiry parsing, and latency:
+
+```bash
+# Run deterministic offline benchmarks
+python -m benchmarks.runner
+
+# Compare against saved baseline to detect regressions
+python -m benchmarks.runner --baseline benchmarks/baselines/default_baseline.json
+```
+
+See [benchmarks/README.md](benchmarks/README.md) for full benchmark documentation and CLI flags.
+

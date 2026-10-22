@@ -1,0 +1,121 @@
+{
+  "version": "1.0.0",
+  "description": "Representative, non-sensitive fixtures for Mealventory scan accuracy and latency benchmarks",
+  "fixtures": [
+    {
+      "id": "food_apple_01",
+      "mode": "food",
+      "filename": "food_apple_01.jpg",
+      "category": "produce",
+      "description": "Honeycrisp red apple produce fixture",
+      "expected_type": "food",
+      "expected_items": ["apple"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "food_banana_02",
+      "mode": "food",
+      "filename": "food_banana_02.jpg",
+      "category": "produce",
+      "description": "Yellow banana bunch fixture",
+      "expected_type": "food",
+      "expected_items": ["banana"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "food_milk_03",
+      "mode": "food",
+      "filename": "food_milk_03.jpg",
+      "category": "dairy",
+      "description": "Whole milk jug fixture",
+      "expected_type": "food",
+      "expected_items": ["milk"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "food_bread_04",
+      "mode": "food",
+      "filename": "food_bread_04.jpg",
+      "category": "bakery",
+      "description": "Artisan sourdough bread loaf fixture",
+      "expected_type": "food",
+      "expected_items": ["bread"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "food_yogurt_05",
+      "mode": "food",
+      "filename": "food_yogurt_05.jpg",
+      "category": "dairy",
+      "description": "Greek yogurt tub fixture",
+      "expected_type": "food",
+      "expected_items": ["yogurt"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.70
+    },
+    {
+      "id": "receipt_grocery_01",
+      "mode": "receipt",
+      "filename": "receipt_grocery_01.jpg",
+      "category": "receipt",
+      "description": "Standard supermarket register receipt with line items",
+      "synthetic_text": "SUPERMARKET RECEIPT\n1x WHOLE MILK $3.99\n1x SOURDOUGH BREAD $2.89\n1x RED APPLE $1.50\nSUBTOTAL: $8.38\nTAX: $0.67\nTOTAL: $9.05",
+      "expected_type": "receipt",
+      "expected_items": ["milk", "bread", "apple"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "receipt_grocery_02",
+      "mode": "receipt",
+      "filename": "receipt_grocery_02.jpg",
+      "category": "receipt",
+      "description": "Market receipt containing egg, chicken and milk",
+      "synthetic_text": "FARMERS MARKET\nEGGS DOZEN $4.50\nCHICKEN BREAST $8.99\nMILK 2L $4.29\nTOTAL $17.78",
+      "expected_type": "receipt",
+      "expected_items": ["egg", "chicken", "milk"],
+      "expected_expiry_dates": [],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "tag_dairy_iso_01",
+      "mode": "tag",
+      "filename": "tag_dairy_iso_01.jpg",
+      "category": "tag",
+      "description": "Milk bottle cap with ISO date format",
+      "synthetic_text": "BEST BEFORE 2026-11-20\nMILK 2% 2L\nKEEP REFRIGERATED",
+      "expected_type": "tag",
+      "expected_items": ["milk"],
+      "expected_expiry_dates": ["2026-11-20"],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "tag_bakery_monthname_02",
+      "mode": "tag",
+      "filename": "tag_bakery_monthname_02.jpg",
+      "category": "tag",
+      "description": "Bakery tag with Canadian bilingual two-letter month code",
+      "synthetic_text": "MEILLEUR AVANT / BEST BEFORE 2027 JA 25\nSLICED BREAD",
+      "expected_type": "tag",
+      "expected_items": ["bread"],
+      "expected_expiry_dates": ["2027 JA 25"],
+      "min_confidence": 0.80
+    },
+    {
+      "id": "tag_slash_date_03",
+      "mode": "tag",
+      "filename": "tag_slash_date_03.jpg",
+      "category": "tag",
+      "description": "Produce packaging tag with slash date notation",
+      "synthetic_text": "PACKED FOR FRESHNESS\nEXP: 10/30/2026\nLOT #48291",
+      "expected_type": "tag",
+      "expected_items": [],
+      "expected_expiry_dates": ["10/30/2026"],
+      "min_confidence": 0.70
+    }
+  ]
+}

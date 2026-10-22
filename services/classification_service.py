@@ -6,6 +6,8 @@ from google.cloud import vision
 
 from models.produce_classifier import classify_image
 from services.image_preprocessing import preprocess_for_classification
+from utils.confidence_scoring import evaluate_detection, RecognitionSource
+from services.mock_engine import is_mock_vision_active, get_mock_food_items
 
 FOOD_KEYWORDS = {
     "avocado",
@@ -100,12 +102,8 @@ def _normalize_label(label: str) -> str:
     return lowered.strip()
 
 
-from utils.confidence_scoring import evaluate_detection, RecognitionSource
-
-
 def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
     """Fallback detector for real-world photos where classifier confidence is low."""
-    from services.mock_engine import is_mock_vision_active, get_mock_food_items
     if is_mock_vision_active():
         return get_mock_food_items()
     try:
@@ -174,4 +172,3 @@ async def detect_food(image_bytes):
         label=label,
     )
     return [evaluation]
-
