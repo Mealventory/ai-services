@@ -164,4 +164,4 @@ async def scan_multi(
         "confidence": 0.0,
         "items": [],
         "message": "No food items detected.",
-    }
+    }
