@@ -120,3 +120,45 @@ async def predict_expiry(
         "purchase_date": purchase_date,
         "predicted_expiry_date": predicted_expiry
     }
+
+
+@router.post(
+    "/multi",
+    responses={400: {"description": "Invalid request payload"},
+               413: {"description": "Image exceeds max size"},
+               415: {"description": "Unsupported media type"}}
+)
+async def scan_multi(
+    file: Annotated[UploadFile, File(...)],
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=415,
+                            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty")
+    if len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+
+    items = await detect_food(content)
+    if not items:
+        packaging = await detect_text_type(content)
+        items = packaging.get('items', []) if packaging else []
+
+    if items:
+        return {
+            "type": "multi",
+            "requested_type": "multi",
+            "confidence": max(item["confidence"] for item in items),
+            "items": [item["name"] for item in items],
+            "item_details": items,
+        }
+
+    return {
+        "type": "unknown",
+        "requested_type": "multi",
+        "confidence": 0.0,
+        "items": [],
+        "message": "No food items detected.",
+    }

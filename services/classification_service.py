@@ -100,8 +100,13 @@ def _normalize_label(label: str) -> str:
     return lowered.strip()
 
 
+from services.mock_engine import is_mock_vision_active, get_mock_food_items
+
+
 def _detect_food_with_vision_labels(image_bytes: bytes) -> List[dict]:
     """Fallback detector for real-world photos where classifier confidence is low."""
+    if is_mock_vision_active():
+        return get_mock_food_items()
     try:
         client = vision.ImageAnnotatorClient()
         image = vision.Image(content=image_bytes)
