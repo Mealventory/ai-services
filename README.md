@@ -32,6 +32,24 @@ The overview above is retained from the local repository. The current code uses
 Google Vision and Keras MobileNetV2; it does not implement every capability in
 the target design below. See [SETUP.md](SETUP.md) for environment setup.
 
+### Implemented Versioned API Contract
+
+The service exposes strongly typed Pydantic contracts declared in [`schemas/scan.py`](schemas/scan.py) and snapshotted in [`contracts/openapi.json`](contracts/openapi.json):
+
+1. **`POST /scan/`**: Accepts multipart form data with `file` and `mode` (`food` | `receipt` | `tag`).
+   - Returns a typed [`ScanResponse`](schemas/scan.py):
+     - `type`: Result mode or status (`food`, `receipt`, `tag`, `mismatch`, `unknown`).
+     - `items`: List of string names for backend and client compatibility.
+     - `item_details`: Array of [`FoodItemDetail`](schemas/scan.py) with `name`, `confidence`, `label`, `category`, `quantity`, `unit`, `price`.
+     - `confidence`: Highest confidence score across detected items (`0.0` - `1.0`).
+     - `expiry_dates`: Extracted expiration date strings.
+     - `needs_user_input` & `prompt`: Flags prompting user input when tag expiry is detected without food name.
+2. **`POST /scan/predict-expiry`**: Predicts food shelf-life from purchase date and storage conditions.
+   - Returns a typed [`ExpiryPredictionResponse`](schemas/scan.py) with `name`, `purchase_date`, and `predicted_expiry_date`.
+3. **`POST /scan/multi`**: Multi-item grocery and produce scanning endpoint.
+   - Returns [`ScanResponse`](schemas/scan.py) with `type: "multi"`.
+4. **Mock Pipeline**: Activating `GEMINI_API_KEY=mock` or `MOCK_VISION=true` intercepts visual and OCR calls, returning deterministic responses in `< 100ms` for zero-cost offline testing.
+
 ## Runtime health probes
 
 - `GET /` is the cheap liveness probe. It confirms the FastAPI process responds

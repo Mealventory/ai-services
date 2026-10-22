@@ -40,7 +40,6 @@ class ScanResponse(BaseModel):
     prompt: Optional[str] = Field(default=None, description="Instruction prompt presented to user when needs_user_input is True")
 
 
-
 class ExpiryPredictionResponse(BaseModel):
     """Response model for heuristic expiry prediction."""
     model_config = ConfigDict(extra="allow")
