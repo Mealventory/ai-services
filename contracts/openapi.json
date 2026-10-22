@@ -195,6 +195,88 @@
         }
       }
     },
+    "/barcode/{barcode}": {
+      "get": {
+        "tags": [
+          "Barcode"
+        ],
+        "summary": "Resolve Product Barcode",
+        "description": "Resolve a UPC/EAN barcode into product metadata and storage guidance.",
+        "operationId": "resolve_product_barcode_barcode__barcode__get",
+        "parameters": [
+          {
+            "name": "barcode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "UPC-A or EAN-13 barcode",
+              "title": "Barcode"
+            },
+            "description": "UPC-A or EAN-13 barcode"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/foodkeeper/predict-expiry": {
+      "post": {
+        "tags": [
+          "FoodKeeper"
+        ],
+        "summary": "Predict Foodkeeper Expiry",
+        "operationId": "predict_foodkeeper_expiry_foodkeeper_predict_expiry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoodKeeperRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Health Check",
@@ -405,6 +487,44 @@
         ],
         "title": "FoodItemDetail",
         "description": "Granular metadata for detected food items."
+      },
+      "FoodKeeperRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "storage_zone": {
+            "type": "string",
+            "enum": [
+              "pantry",
+              "fridge",
+              "freezer"
+            ],
+            "title": "Storage Zone"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "storage_zone"
+        ],
+        "title": "FoodKeeperRequest"
       },
       "HTTPValidationError": {
         "properties": {

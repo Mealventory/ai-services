@@ -41,7 +41,6 @@ async def scan_image(
     except ValueError:
         raise HTTPException(status_code=400, detail="Corrupt or undecodable image file. Please provide a valid photo.")
 
-
     if mode == "food":
         items = await detect_food(content)
         if not items:
@@ -176,4 +175,4 @@ async def scan_multi(
         "confidence": 0.0,
         "items": [],
         "message": "No food items detected.",
-    }
+    }
