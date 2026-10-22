@@ -1,0 +1,339 @@
+{
+  "timestamp": "2026-10-15T17:04:02.601414Z",
+  "offline": true,
+  "fixture_count_total": 10,
+  "precision_macro": 1.0,
+  "recall_macro": 1.0,
+  "f1_macro": 1.0,
+  "type_accuracy": 1.0,
+  "overall_latency": {
+    "count": 10,
+    "min_ms": 0.0,
+    "max_ms": 1.28,
+    "mean_ms": 0.14,
+    "p50_ms": 0.01,
+    "p90_ms": 0.15,
+    "p95_ms": 0.71
+  },
+  "modes": {
+    "food": {
+      "fixture_count": 5,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0,
+      "type_accuracy": 1.0,
+      "expiry_exact_match_rate": 1.0,
+      "latency": {
+        "count": 5,
+        "min_ms": 0.01,
+        "max_ms": 0.01,
+        "mean_ms": 0.01,
+        "p50_ms": 0.01,
+        "p90_ms": 0.01,
+        "p95_ms": 0.01
+      }
+    },
+    "receipt": {
+      "fixture_count": 2,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0,
+      "type_accuracy": 1.0,
+      "expiry_exact_match_rate": 1.0,
+      "latency": {
+        "count": 2,
+        "min_ms": 0.0,
+        "max_ms": 0.01,
+        "mean_ms": 0.01,
+        "p50_ms": 0.01,
+        "p90_ms": 0.01,
+        "p95_ms": 0.01
+      }
+    },
+    "tag": {
+      "fixture_count": 3,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0,
+      "type_accuracy": 1.0,
+      "expiry_exact_match_rate": 1.0,
+      "latency": {
+        "count": 3,
+        "min_ms": 0.02,
+        "max_ms": 1.28,
+        "mean_ms": 0.44,
+        "p50_ms": 0.02,
+        "p90_ms": 1.03,
+        "p95_ms": 1.15
+      }
+    }
+  },
+  "fixtures": [
+    {
+      "fixture_id": "food_apple_01",
+      "mode": "food",
+      "latency_ms": 0.01,
+      "confidence": 0.9,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "food",
+      "expected_type": "food",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "apple"
+      ],
+      "expected_items": [
+        "apple"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "food_banana_02",
+      "mode": "food",
+      "latency_ms": 0.01,
+      "confidence": 0.95,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "food",
+      "expected_type": "food",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "banana"
+      ],
+      "expected_items": [
+        "banana"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "food_milk_03",
+      "mode": "food",
+      "latency_ms": 0.01,
+      "confidence": 0.98,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "food",
+      "expected_type": "food",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "milk"
+      ],
+      "expected_items": [
+        "milk"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "food_bread_04",
+      "mode": "food",
+      "latency_ms": 0.01,
+      "confidence": 0.92,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "food",
+      "expected_type": "food",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "bread"
+      ],
+      "expected_items": [
+        "bread"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "food_yogurt_05",
+      "mode": "food",
+      "latency_ms": 0.01,
+      "confidence": 0.95,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "food",
+      "expected_type": "food",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "yogurt"
+      ],
+      "expected_items": [
+        "yogurt"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "receipt_grocery_01",
+      "mode": "receipt",
+      "latency_ms": 0.01,
+      "confidence": 0.96,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "receipt",
+      "expected_type": "receipt",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "milk",
+        "bread",
+        "apple"
+      ],
+      "expected_items": [
+        "milk",
+        "bread",
+        "apple"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "receipt_grocery_02",
+      "mode": "receipt",
+      "latency_ms": 0.0,
+      "confidence": 0.96,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "receipt",
+      "expected_type": "receipt",
+      "expiry_matched": true,
+      "detected_expiry_dates": [],
+      "expected_expiry_dates": [],
+      "detected_items": [
+        "egg",
+        "chicken",
+        "milk"
+      ],
+      "expected_items": [
+        "egg",
+        "chicken",
+        "milk"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "tag_dairy_iso_01",
+      "mode": "tag",
+      "latency_ms": 1.28,
+      "confidence": 0.94,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "tag",
+      "expected_type": "tag",
+      "expiry_matched": true,
+      "detected_expiry_dates": [
+        "2026-11-20"
+      ],
+      "expected_expiry_dates": [
+        "2026-11-20"
+      ],
+      "detected_items": [
+        "milk"
+      ],
+      "expected_items": [
+        "milk"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "tag_bakery_monthname_02",
+      "mode": "tag",
+      "latency_ms": 0.02,
+      "confidence": 0.94,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "tag",
+      "expected_type": "tag",
+      "expiry_matched": true,
+      "detected_expiry_dates": [
+        "2027 JA 25"
+      ],
+      "expected_expiry_dates": [
+        "2027 JA 25"
+      ],
+      "detected_items": [
+        "bread"
+      ],
+      "expected_items": [
+        "bread"
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "fixture_id": "tag_slash_date_03",
+      "mode": "tag",
+      "latency_ms": 0.02,
+      "confidence": 0.94,
+      "is_success": true,
+      "type_matched": true,
+      "detected_type": "tag",
+      "expected_type": "tag",
+      "expiry_matched": true,
+      "detected_expiry_dates": [
+        "10/30/2026"
+      ],
+      "expected_expiry_dates": [
+        "10/30/2026"
+      ],
+      "detected_items": [],
+      "expected_items": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  ],
+  "baseline_comparison": {
+    "has_regressions": false,
+    "regressions": [],
+    "mode_comparisons": {
+      "food": {
+        "f1_current": 1.0,
+        "f1_baseline": 1.0,
+        "f1_delta": 0.0,
+        "latency_mean_current_ms": 0.01,
+        "latency_mean_baseline_ms": 0.01,
+        "latency_delta_percent": 0.0
+      },
+      "receipt": {
+        "f1_current": 1.0,
+        "f1_baseline": 1.0,
+        "f1_delta": 0.0,
+        "latency_mean_current_ms": 0.01,
+        "latency_mean_baseline_ms": 0.01,
+        "latency_delta_percent": 0.0
+      },
+      "tag": {
+        "f1_current": 1.0,
+        "f1_baseline": 1.0,
+        "f1_delta": 0.0,
+        "latency_mean_current_ms": 0.44,
+        "latency_mean_baseline_ms": 0.46,
+        "latency_delta_percent": -4.35
+      }
+    }
+  }
+}

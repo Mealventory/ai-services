@@ -211,3 +211,20 @@ not a guarantee that food is safe to eat.
 - **Inference Latency**: < 1.5s for receipt OCR; < 1.0s for multi-item produce vision.
 - **JSON Schema Guarantee**: 100% adherence to Pydantic models through Gemini 1.5 Flash `response_schema` enforcement (eliminating malformed regex JSON failures).
 - **Graceful Fallback**: In the event of OCR ambiguity, the service preserves the raw text snippet and marks confidence as `< 0.70`, allowing the user to review and correct on the mobile client.
+
+---
+
+## 5. Scan Accuracy & Latency Benchmark Suite
+
+The repository includes a repeatable evaluation harness for measuring recognition quality, exact-match expiry parsing, and latency:
+
+```bash
+# Run deterministic offline benchmarks
+python -m benchmarks.runner
+
+# Compare against saved baseline to detect regressions
+python -m benchmarks.runner --baseline benchmarks/baselines/default_baseline.json
+```
+
+See [benchmarks/README.md](benchmarks/README.md) for full benchmark documentation and CLI flags.
+
