@@ -1,5 +1,6 @@
 """Unit and integration tests for deterministic mock vision pipeline."""
 import asyncio
+import base64
 import io
 import os
 import time
@@ -55,7 +56,7 @@ class TestMockVisionEngine(unittest.TestCase):
 
         a valid mock response with 5 realistic food items is returned in < 100ms.
         """
-        dummy_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        dummy_png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC")
         file = UploadFile(io.BytesIO(dummy_png), filename="test.png", headers=Headers({"content-type": "image/png"}))
 
         with patch.dict(os.environ, {"GEMINI_API_KEY": "mock"}):

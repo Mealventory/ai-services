@@ -477,6 +477,12 @@
             ],
             "title": "Price",
             "description": "Extracted item price if detected on receipt"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "description": "Flag indicating detection is uncertain and requires user review",
+            "default": false
           }
         },
         "additionalProperties": true,
@@ -573,6 +579,12 @@
             "title": "Confidence",
             "description": "Overall detection confidence score",
             "default": 0.0
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "description": "True if any detected item or the overall scan is uncertain",
+            "default": false
           },
           "items": {
             "items": {
