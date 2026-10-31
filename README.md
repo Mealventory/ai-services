@@ -62,24 +62,24 @@ product is not currently listed in OpenFoodFacts; its response uses
 
 ## Validating FoodKeeper imports
 
-`Scripts/import_foodkeeper.py` imports a local USDA `.xls` or `.xlsx` workbook
-into `data/foodkeeper.json`. It validates the source `Version`, `Category` and
-`Product` sheets against the published FoodKeeper fields before processing any
-records. Version and modified date come from the row marked `Current_Version`.
-Shelf-life bounds remain numeric and retain their source unit; incomplete,
-negative, inverted, or nonnumeric ranges are reported with the row and field.
-Qualitative source guidance is preserved separately from numeric ranges. A
-changed or missing required sheet/field aborts before writing. The output is
-replaced atomically only when at least one product is usable. If no current
-version row or date is available, provenance is explicitly marked unavailable.
+`Scripts/import_foodkeeper.py` accepts the USDA `.xls`/`.xlsx` workbook or its
+JSON workbook export, validates the source `Version`, `Category` and `Product`
+sheets, then builds the `entries` catalogue consumed by the FoodKeeper matcher.
+Version/date come from the row marked `Current_Version`. Shelf-life bounds are
+checked for numeric, nonnegative values and valid ordering; invalid ranges and
+skipped products are reported with row numbers and reasons. Existing alias and
+pantry/fridge/freezer matching behavior is preserved. A changed or missing
+required sheet/field aborts before output is touched, and the output is
+replaced atomically only after a usable catalogue is built. Missing source
+provenance is explicitly identified.
 
 ```powershell
 python Scripts/import_foodkeeper.py .\FoodKeeper-Data.xls
 ```
 
-The importer does not download source data. It prints counts and reasons for
-fully skipped products and invalid individual ranges. Offline fixture coverage
-is run with `python -m pytest tests/test_foodkeeper_import.py -q`.
+The importer does not download source data. It prints product and runtime-entry
+counts, skipped-product reasons, and invalid-range details. Offline fixture
+coverage is run with `python -m pytest tests/test_foodkeeper_import.py -q`.
 
 ---
 

@@ -1,5 +1,6 @@
 import importlib.util
 from datetime import date
+import json
 from pathlib import Path
 
 import pytest
@@ -57,22 +58,23 @@ def test_imports_real_foodkeeper_fields_and_reports_bad_ranges(tmp_path):
 
     result = foodkeeper_import.build_catalogue(source)
 
-    assert result["source_version"] == 128
-    assert result["source_date"] == "2018-09-06"
+    assert result["source_data_version"] == 128
+    assert result["source_data_date"] == "2018-09-06"
     assert result["provenance_status"] == "available"
-    assert result["imported_count"] == 3
-    assert result["skipped_count"] == 4
+    assert result["imported_count"] == 2
+    assert result["entry_count"] == 2
+    assert result["skipped_count"] == 5
     assert result["range_issue_count"] == 4
-    apple, cocktail, banana = result["records"]
-    assert apple["shelf_life"][0] == {"field": "Pantry", "min": 3, "max": 5, "unit": "Days", "tips": ""}
-    assert cocktail["shelf_life"][0]["min"] is None
-    assert cocktail["shelf_life"][0]["max"] == 18
-    assert banana["qualitative_guidance"] == [{"field": "Pantry", "value": "When Ripe", "tips": ""}]
+    apple, cocktail = result["entries"]
+    assert apple["zones"]["pantry"] == {"min_days": 3, "max_days": 5}
+    assert cocktail["zones"]["pantry"] == {"min_days": 540, "max_days": 540}
     reasons = [issue["reason"] for issue in result["range_issues"]]
     assert "minimum must be nonnegative" in reasons
     assert "minimum exceeds maximum" in reasons
     assert "minimum is not numeric" in reasons
     assert "unsupported shelf-life metric: seasons" in reasons
+    skipped_reasons = [record["reason"] for record in result["skipped"]]
+    assert any("minimum must be nonnegative" in reason for reason in skipped_reasons)
 
 
 @pytest.mark.parametrize("missing_sheet,missing_field,expected", [
@@ -112,6 +114,40 @@ def test_missing_current_version_is_reported_as_unavailable(tmp_path):
 
     result = foodkeeper_import.build_catalogue(source)
 
-    assert result["source_version"] is None
-    assert result["source_date"] is None
+    assert result["source_data_version"] is None
+    assert result["source_data_date"] is None
     assert result["provenance_status"] == "unavailable"
+
+
+def test_unparseable_source_date_is_not_claimed_as_available(tmp_path):
+    source = tmp_path / "bad-date.xlsx"
+    make_workbook(source, source_date="unknown date",
+                  products=[source_product(ID=1, Category_ID=1, Name="Apple", Pantry_Min=1, Pantry_Max=2, Pantry_Metric="Days")])
+
+    result = foodkeeper_import.build_catalogue(source)
+
+    assert result["source_data_version"] == 128
+    assert result["source_data_date"] is None
+    assert result["provenance_status"] == "unavailable"
+
+
+def test_json_workbook_export_preserves_runtime_catalogue_shape(tmp_path):
+    source = tmp_path / "source.json"
+    product = source_product(ID=1, Category_ID=1, Name="Apple", Keywords="Apple,fruit",
+                             DOP_Pantry_Min=2, DOP_Pantry_Max=4, DOP_Pantry_Metric="Weeks")
+    payload = {"fileName": "FoodKeeper-Data.xls", "sheets": [
+        {"name": "Version", "data": [[
+            {"Data_Version_Number": 128}, {"Current_Version": "Yes"}, {"Modified_Date": "09-06-2018"},
+        ]]},
+        {"name": "Category", "data": [[
+            {"ID": 1}, {"Category_Name": "Produce"}, {"Subcategory_Name": "Fruit"},
+        ]]},
+        {"name": "Product", "data": [[{key: value} for key, value in product.items()]]},
+    ]}
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = foodkeeper_import.build_catalogue(source)
+
+    assert result["source_data_version"] == 128
+    assert result["source_data_date"] == "2018-09-06"
+    assert result["entries"][0]["zones"]["pantry"] == {"min_days": 14, "max_days": 28}
