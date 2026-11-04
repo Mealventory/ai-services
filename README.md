@@ -78,6 +78,27 @@ time. A small curated Kroger fallback handles UPC `0001111090642` because that
 product is not currently listed in OpenFoodFacts; its response uses
 `source: "kroger_fallback"`.
 
+## Validating FoodKeeper imports
+
+`Scripts/import_foodkeeper.py` accepts the USDA `.xls`/`.xlsx` workbook or its
+JSON workbook export, validates the source `Version`, `Category` and `Product`
+sheets, then builds the `entries` catalogue consumed by the FoodKeeper matcher.
+Version/date come from the row marked `Current_Version`. Shelf-life bounds are
+checked for numeric, nonnegative values and valid ordering; invalid ranges and
+skipped products are reported with row numbers and reasons. Existing alias and
+pantry/fridge/freezer matching behavior is preserved. A changed or missing
+required sheet/field aborts before output is touched, and the output is
+replaced atomically only after a usable catalogue is built. Missing source
+provenance is explicitly identified.
+
+```powershell
+python Scripts/import_foodkeeper.py .\FoodKeeper-Data.xls
+```
+
+The importer does not download source data. It prints product and runtime-entry
+counts, skipped-product reasons, and invalid-range details. Offline fixture
+coverage is run with `python -m pytest tests/test_foodkeeper_import.py -q`.
+
 ---
 
 # Mealventory AI & Vision Microservice: Target Final State & Purpose
