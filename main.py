@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from api.scan import router as scan_router
 from api.barcode import router as barcode_router
+from api.foodkeeper import router as foodkeeper_router
 from fastapi.responses import JSONResponse
 from services.ocr_service import vision_credentials_configured
+from services.request_logging import request_logging_middleware
 from models import produce_classifier
 
 app = FastAPI(
@@ -10,8 +12,11 @@ app = FastAPI(
     description="AI microservice for OCR and produce classification"
 )
 
+app.middleware("http")(request_logging_middleware)
+
 app.include_router(scan_router, prefix="/scan", tags=["Scan"])
 app.include_router(barcode_router, prefix="/barcode", tags=["Barcode"])
+app.include_router(foodkeeper_router, prefix="/foodkeeper", tags=["FoodKeeper"])
 
 
 @app.get("/")

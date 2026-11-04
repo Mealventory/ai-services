@@ -32,6 +32,24 @@ The overview above is retained from the local repository. The current code uses
 Google Vision and Keras MobileNetV2; it does not implement every capability in
 the target design below. See [SETUP.md](SETUP.md) for environment setup.
 
+### Implemented Versioned API Contract
+
+The service exposes strongly typed Pydantic contracts declared in [`schemas/scan.py`](schemas/scan.py) and snapshotted in [`contracts/openapi.json`](contracts/openapi.json):
+
+1. **`POST /scan/`**: Accepts multipart form data with `file` and `mode` (`food` | `receipt` | `tag`).
+   - Returns a typed [`ScanResponse`](schemas/scan.py):
+     - `type`: Result mode or status (`food`, `receipt`, `tag`, `mismatch`, `unknown`).
+     - `items`: List of string names for backend and client compatibility.
+     - `item_details`: Array of [`FoodItemDetail`](schemas/scan.py) with `name`, `confidence`, `label`, `category`, `quantity`, `unit`, `price`.
+     - `confidence`: Highest confidence score across detected items (`0.0` - `1.0`).
+     - `expiry_dates`: Extracted expiration date strings.
+     - `needs_user_input` & `prompt`: Flags prompting user input when tag expiry is detected without food name.
+2. **`POST /scan/predict-expiry`**: Predicts food shelf-life from purchase date and storage conditions.
+   - Returns a typed [`ExpiryPredictionResponse`](schemas/scan.py) with `name`, `purchase_date`, and `predicted_expiry_date`.
+3. **`POST /scan/multi`**: Multi-item grocery and produce scanning endpoint.
+   - Returns [`ScanResponse`](schemas/scan.py) with `type: "multi"`.
+4. **Mock Pipeline**: Activating `GEMINI_API_KEY=mock` or `MOCK_VISION=true` intercepts visual and OCR calls, returning deterministic responses in `< 100ms` for zero-cost offline testing.
+
 ## Runtime health probes
 
 - `GET /` is the cheap liveness probe. It confirms the FastAPI process responds
@@ -149,7 +167,7 @@ ai-services/
 │   └── logging.py                    # Structured logging
 │
 ├── data/
-│   └── foodkeeper.json               # Seeded USDA FoodKeeper reference database
+│   └── foodkeeper.json               # Normalized USDA FoodKeeper snapshot (613 entries)
 │
 ├── models/                           # Pydantic v2 Contract Schemas
 │   ├── detection.py                  # DetectedItem, BoundingBox, ScanResponse
@@ -170,6 +188,23 @@ ai-services/
 ├── Dockerfile                        # Multi-stage image with OpenCV/GL dependencies
 └── requirements.txt                  # Locked Python 3.11 requirements
 ```
+
+## FoodKeeper expiry endpoint
+
+`POST /foodkeeper/predict-expiry` accepts `name`, `storage_zone` (`pantry`,
+`fridge`, or `freezer`), and an optional `purchase_date`. It returns a
+purchase-date-based estimate only when the best `token_sort_ratio` match is
+above 75 and there is no tied food-group match. General preparation words such
+as “fresh” and “fillet” are removed before matching. Published ranges use the
+upper endpoint; month, week, and year values convert to 30, 7, and 365 days.
+Text-only guidance and unsupported zones return `matched: false`.
+
+The checked-in snapshot contains 613 usable food groups from USDA FoodKeeper
+data version 128 (the USDA English JSON snapshot dated September 7, 2018).
+It is a source-linked, offline snapshot; the importer at
+`Scripts/import_foodkeeper.py` converts the USDA workbook JSON export into the
+runtime format. Shelf-life estimates describe storage guidance and quality,
+not a guarantee that food is safe to eat.
 
 ---
 
@@ -215,3 +250,20 @@ ai-services/
 - **Inference Latency**: < 1.5s for receipt OCR; < 1.0s for multi-item produce vision.
 - **JSON Schema Guarantee**: 100% adherence to Pydantic models through Gemini 1.5 Flash `response_schema` enforcement (eliminating malformed regex JSON failures).
 - **Graceful Fallback**: In the event of OCR ambiguity, the service preserves the raw text snippet and marks confidence as `< 0.70`, allowing the user to review and correct on the mobile client.
+
+---
+
+## 5. Scan Accuracy & Latency Benchmark Suite
+
+The repository includes a repeatable evaluation harness for measuring recognition quality, exact-match expiry parsing, and latency:
+
+```bash
+# Run deterministic offline benchmarks
+python -m benchmarks.runner
+
+# Compare against saved baseline to detect regressions
+python -m benchmarks.runner --baseline benchmarks/baselines/default_baseline.json
+```
+
+See [benchmarks/README.md](benchmarks/README.md) for full benchmark documentation and CLI flags.
+
