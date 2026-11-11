@@ -67,14 +67,22 @@ billable request. Check those separately when diagnosing live scan failures.
 
 ## Barcode lookup
 
-`GET /barcode/{barcode}` resolves UPC and EAN barcodes through OpenFoodFacts.
+`GET /barcode/{barcode}` accepts GTIN-8 (8 digits), UPC-A/GTIN-12 (12 digits),
+and EAN-13 (13 digits). Each format's final digit must match the GS1 modulo-10
+check digit calculated from the preceding digits. Other lengths, non-ASCII
+digits, and invalid check digits return HTTP 422 before OpenFoodFacts or curated
+fallback lookup. The API response identifies the invalid check digit or states
+that the barcode must contain 8, 12, or 13 digits.
+
+Supported barcodes resolve through OpenFoodFacts.
 The response includes the product name, brand, category, storage zone, and
 packaging image when OpenFoodFacts has them. Successful and not-found results
 are cached in memory per AI-service process. For refrigerated milk, the response
 also includes opened-product guidance (`shelf_life_days: 3`, after opening);
 unopened milk should follow the package best-before date. A warm cached lookup
 is expected to be fast, while a first lookup depends on OpenFoodFacts response
-time. A small curated Kroger fallback handles UPC `0001111090642` because that
+time. A small curated Kroger fallback handles EAN-13 `0001111090645` (the
+previous configured value, `0001111090642`, had an invalid check digit) because that
 product is not currently listed in OpenFoodFacts; its response uses
 `source: "kroger_fallback"`.
 

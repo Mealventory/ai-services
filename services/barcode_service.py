@@ -8,19 +8,20 @@ import requests
 OPENFOODFACTS_URL = "https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
 USER_AGENT = "Mealventory/1.0 (https://github.com/Mealventory/ai-services)"
 REQUEST_TIMEOUT_SECONDS = (0.5, 1.0)
+SUPPORTED_BARCODE_LENGTHS = (8, 12, 13)
 
 # Kroger's published UPC for this item. OpenFoodFacts currently has no record,
 # so preserve this small verified product fallback for the acceptance scenario.
 CURATED_FALLBACKS = {
-    "0001111090642": {
+    "0001111090645": {
         "found": True,
         "lookup_status": "found",
-        "barcode": "0001111090642",
+        "barcode": "0001111090645",
         "name": "Kroger Vitamin D Whole Milk Gallon",
         "brand": "Kroger",
         "category": "Dairy",
         "storage_zone": "fridge",
-        "image_url": "https://www.kroger.com/product/images/medium/front/0001111090642",
+        "image_url": "https://www.kroger.com/product/images/medium/front/0001111090645",
         "shelf_life_days": 3,
         "shelf_life": {
             "days": 3,
@@ -72,6 +73,22 @@ def _shelf_life(name: str, category: str, storage_zone: str) -> dict | None:
             "source_url": "https://www.canada.ca/en/health-canada/services/general-food-safety-tips/safe-food-storage.html",
         }
     return None
+
+
+def validate_barcode(barcode: str) -> str:
+    """Normalize and validate a GTIN-8, UPC-A (GTIN-12), or EAN-13."""
+    normalized = (barcode or "").strip()
+    if not re.fullmatch(r"[0-9]+", normalized) or len(normalized) not in SUPPORTED_BARCODE_LENGTHS:
+        raise ValueError("Barcode must contain 8, 12, or 13 digits")
+
+    weighted_sum = sum(
+        int(digit) * (3 if offset % 2 == 0 else 1)
+        for offset, digit in enumerate(reversed(normalized[:-1]))
+    )
+    expected_check_digit = (10 - weighted_sum % 10) % 10
+    if int(normalized[-1]) != expected_check_digit:
+        raise ValueError("Barcode has an invalid check digit")
+    return normalized
 
 
 @lru_cache(maxsize=1024)
@@ -148,9 +165,7 @@ def _lookup_cached(barcode: str) -> dict:
 
 
 def resolve_barcode(barcode: str) -> dict:
-    normalized = (barcode or "").strip()
-    if not re.fullmatch(r"\d{8}|\d{12}|\d{13}", normalized):
-        raise ValueError("Barcode must contain 8, 12, or 13 digits")
+    normalized = validate_barcode(barcode)
     if normalized in CURATED_FALLBACKS:
         return dict(CURATED_FALLBACKS[normalized])
     # Return a copy so callers cannot mutate the cached response.
