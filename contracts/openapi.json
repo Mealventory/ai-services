@@ -210,10 +210,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "UPC-A or EAN-13 barcode",
+              "description": "GTIN-8, UPC-A/GTIN-12, or EAN-13 barcode with a valid check digit",
               "title": "Barcode"
             },
-            "description": "UPC-A or EAN-13 barcode"
+            "description": "GTIN-8, UPC-A/GTIN-12, or EAN-13 barcode with a valid check digit"
           }
         ],
         "responses": {
