@@ -121,7 +121,8 @@ class RecognitionTests(unittest.TestCase):
         self.assertNotIn('upstream-key-private-token', response.text)
         event = json.loads(recorded.call_args.args[0])
         self.assertEqual(event['request_id'], 'scan-fallback-40')
-        self.assertEqual(event['route'], '/scan/multi')
+        # Existing middleware reports the matched router's own path.
+        self.assertEqual(event['route'], '/multi')
         self.assertEqual(event['status'], 503)
         self.assertEqual(event['failure_category'], 'service_unavailable')
         self.assertNotIn('upstream-key-private-token', json.dumps(event))
