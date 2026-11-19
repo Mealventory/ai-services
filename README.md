@@ -50,6 +50,66 @@ The service exposes strongly typed Pydantic contracts declared in [`schemas/scan
    - Returns [`ScanResponse`](schemas/scan.py) with `type: "multi"`.
 4. **Mock Pipeline**: Activating `GEMINI_API_KEY=mock` or `MOCK_VISION=true` intercepts visual and OCR calls, returning deterministic responses in `< 100ms` for zero-cost offline testing.
 
+## Automated pull request checks
+
+The [AI Services CI workflow](.github/workflows/ai-services-ci.yml) runs on
+pull requests, pushes to `main`, and manual dispatch. It has two required jobs:
+
+* **Offline tests, scan contract, and benchmarks:** Python 3.11, pinned runtime
+  and CI dependencies, credential-free mock recognition, strict comparison of
+  the generated FastAPI OpenAPI schema with `contracts/openapi.json`, and
+  deterministic scan benchmarks against `benchmarks/baselines/default_baseline.json`.
+* **Build AI Services runtime image:** Builds the production `Dockerfile` in
+  an independent job. A Docker build failure blocks the PR.
+
+No GitHub secrets are provided to either job. The offline job explicitly sets
+`MOCK_VISION=true` and `GEMINI_API_KEY=mock`. This also prevents the
+MobileNetV2 ImageNet weights from being downloaded in test mode. Provider API
+credentials, real OCR, paid inference and live benchmark evaluations are **not**
+part of the automatic CI workflow.
+
+### Reproduce CI checks locally
+
+From `ai-services/`, using Python 3.11 and an activated virtual environment:
+
+```bash
+python -m pip install -r requirements-ci.txt
+MOCK_VISION=true GEMINI_API_KEY=mock python -m pytest tests/ --ignore=tests/test_foodkeeper_import.py -v
+MOCK_VISION=true GEMINI_API_KEY=mock python -m pytest tests/test_scan_contract.py::TestScanContracts::test_openapi_snapshot_is_valid_and_matches_live_schema -v
+python -m benchmarks.runner --baseline benchmarks/baselines/default_baseline.json --output /tmp/mealventory-ai-benchmark-report.json
+docker build -t mealventory-ai-services:ci .
+```
+
+The existing `tests/test_foodkeeper_import.py` module has six failures on
+`main`: it expects importer APIs such as `PRODUCT_FIELDS` and
+`build_catalogue` that the checked-in `Scripts/import_foodkeeper.py` does
+not provide. This unrelated importer discrepancy is *explicitly excluded*
+from the required test step and runs as a **visible, nonblocking** CI step.
+The other 92 tests, including all upload protection and scan regression tests,
+remain mandatory. This is a known coverage gap, **not** an all-green full suite.
+To inspect the outstanding failures locally:
+
+```bash
+python -m pytest tests/test_foodkeeper_import.py -v
+```
+
+When intentionally updating the scan API, regenerate the OpenAPI snapshot only
+after reviewing the change and its client compatibility implications:
+
+```bash
+MOCK_VISION=true GEMINI_API_KEY=mock python -c 'import json; from pathlib import Path; from main import app; Path("contracts/openapi.json").write_text(json.dumps(app.openapi(), indent=2) + "\\n", encoding="utf-8")'
+```
+
+Commit the reviewed snapshot alongside the API change. A generated contract
+difference without a corresponding snapshot update fails required CI.
+
+For deliberate **live-provider** evaluations, use the separate manual benchmark
+command `python -m benchmarks.runner --live` only in a configured environment
+where you intend to incur provider calls or charges. Never add those credentials
+to the default GitHub workflow.
+
+---
+
 ## Runtime health probes
 
 - `GET /` is the cheap liveness probe. It confirms the FastAPI process responds
