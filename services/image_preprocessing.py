@@ -1,5 +1,6 @@
 """Image preprocessing pipeline with EXIF rotation, color normalization, OCR enhancement, and decode validation."""
 import io
+import warnings
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
 
@@ -7,39 +8,65 @@ MAX_CLASSIFICATION_SIZE = (224, 224)
 MAX_OCR_DIMENSION = 2400
 MAX_FOOD_DIMENSION = 1600
 
+# The compressed file limit alone is insufficient: a tiny PNG or WebP can
+# describe an enormous bitmap. Keep this separate from the output resize cap.
+# Normal 12/24 MP phone photographs are supported; extreme decodes are not.
+MAX_DECODE_PIXELS = 25_000_000
+MAX_DECODE_EDGE = 10_000
+
+
+def _check_image_dimensions(image: Image.Image) -> None:
+    width, height = image.size
+    if (
+        width < 1
+        or height < 1
+        or width > MAX_DECODE_EDGE
+        or height > MAX_DECODE_EDGE
+        or width * height > MAX_DECODE_PIXELS
+    ):
+        raise ValueError("Image dimensions exceed the safe scanning limit")
+
 
 def decode_and_normalize_image(image_bytes: bytes) -> Image.Image:
-    """Safely decode raw image bytes, verify integrity, fix EXIF orientation, and normalize to RGB.
+    """Verify headers and pixel dimensions before decoding any bitmap pixels.
 
     Raises:
-        ValueError: If image is empty, corrupt, or cannot be decoded.
+        ValueError: If an image is too large, corrupt, empty or undecodable.
     """
     if not image_bytes:
         raise ValueError("Image bytes are empty")
 
     try:
-        bio = io.BytesIO(image_bytes)
-        img = Image.open(bio)
-        img.verify()
-        # Re-open after verify() as documented by Pillow
-        bio.seek(0)
-        img = Image.open(bio)
-        img.load()
+        # Pillow's default decompression-bomb threshold is larger than our
+        # explicit pixel budget. Convert its warnings to errors as well.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            bio = io.BytesIO(image_bytes)
+            with Image.open(bio) as probe:
+                _check_image_dimensions(probe)
+                probe.verify()
+
+            # Pillow documents reopening after verify(), which invalidates
+            # the decoder state. Reject unsafe dimensions on BOTH opens.
+            bio.seek(0)
+            with Image.open(bio) as decoded:
+                _check_image_dimensions(decoded)
+                decoded.load()
+                try:
+                    normalized = ImageOps.exif_transpose(decoded)
+                except (OSError, ValueError):
+                    # Malformed EXIF metadata should not block a valid image.
+                    normalized = decoded.copy()
+
+                if normalized.mode != "RGB":
+                    normalized = normalized.convert("RGB")
+                return normalized
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+        raise ValueError("Image dimensions exceed the safe scanning limit") from exc
+    except ValueError:
+        raise
     except Exception as exc:
-        raise ValueError(f"Corrupt or undecodable image: {exc}") from exc
-
-    # Correct EXIF rotation from mobile cameras
-    try:
-        transposed = ImageOps.exif_transpose(img)
-        if transposed is not None:
-            img = transposed
-    except Exception:
-        pass
-
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-
-    return img
+        raise ValueError("Corrupt or undecodable image") from exc
 
 
 def preprocess_image_for_mode(image_bytes: bytes, mode: str = "food") -> bytes:
