@@ -41,15 +41,13 @@ def decode_and_normalize_image(image_bytes: bytes) -> Image.Image:
         # explicit pixel budget. Convert its warnings to errors as well.
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
-            bio = io.BytesIO(image_bytes)
-            with Image.open(bio) as probe:
+            with Image.open(io.BytesIO(image_bytes)) as probe:
                 _check_image_dimensions(probe)
                 probe.verify()
 
-            # Pillow documents reopening after verify(), which invalidates
-            # the decoder state. Reject unsafe dimensions on BOTH opens.
-            bio.seek(0)
-            with Image.open(bio) as decoded:
+            # Reopen a separate buffer, since verify() may close the original
+            # image's file pointer. Validate again before load().
+            with Image.open(io.BytesIO(image_bytes)) as decoded:
                 _check_image_dimensions(decoded)
                 decoded.load()
                 try:
