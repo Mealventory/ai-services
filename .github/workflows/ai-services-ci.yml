@@ -1,6 +1,6 @@
 name: AI Services CI
 
-on:
+"on":
   pull_request:
   push:
     branches:
