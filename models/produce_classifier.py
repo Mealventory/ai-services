@@ -3,11 +3,25 @@
 from keras.applications import MobileNetV2
 from keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
 import numpy as np
+import os
 
-model = MobileNetV2(weights="imagenet")
+
+def _offline_mock_mode() -> bool:
+    """Offline CI and mock scans must never download ImageNet weights."""
+    return (
+        os.getenv("MOCK_VISION", "").strip().lower() in {"1", "true", "yes"}
+        or os.getenv("GEMINI_API_KEY") == "mock"
+    )
+
+
+# Preserve the real classifier's startup behavior for production, but never
+# initialize/download external weights for deterministic mock vision tests.
+model = None if _offline_mock_mode() else MobileNetV2(weights="imagenet")
+
 
 def classify_image(image_array):
-    
+    if model is None:
+        raise RuntimeError("ImageNet classifier is unavailable in mock vision mode")
     image_array = preprocess_input(image_array)
     preds = model.predict(image_array)
     decoded = decode_predictions(preds, top=3)[0]
