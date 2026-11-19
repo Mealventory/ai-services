@@ -20,7 +20,12 @@ class TestScanContracts(unittest.TestCase):
         snapshot = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
         live = app.openapi()
 
-        self.assertEqual(list(snapshot["paths"].keys()), list(live["paths"].keys()))
+        self.assertEqual(
+            snapshot,
+            live,
+            "The checked-in OpenAPI contract drifted from FastAPI's generated schema. "
+            "Review the breaking/additive API changes and regenerate contracts/openapi.json.",
+        )
         self.assertIn("/scan/", snapshot["paths"])
         self.assertIn("/scan/multi", snapshot["paths"])
         self.assertIn("/scan/predict-expiry", snapshot["paths"])

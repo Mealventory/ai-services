@@ -1,0 +1,5 @@
+# Development-only dependencies used by the offline GitHub Actions test suite.
+# Production dependencies remain pinned in requirements.txt.
+-r requirements.txt
+pytest==9.2.0
+httpx2==2.16.2
