@@ -15,6 +15,30 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 
+async def read_scan_upload(file: UploadFile) -> bytes:
+    """Read at most the upload limit plus one byte, closing on every outcome.
+
+    UploadFile is commonly backed by a spooled file. Reading without a size
+    bound unnecessarily copies an arbitrarily large upload into process memory.
+    A single extra byte is enough to detect and reject oversized uploads.
+    """
+    try:
+        if file.content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp",
+            )
+
+        content = await file.read(MAX_IMAGE_BYTES + 1)
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded image is empty")
+        if len(content) > MAX_IMAGE_BYTES:
+            raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+        return content
+    finally:
+        await file.close()
+
+
 @router.post(
     "/",
     response_model=ScanResponse,
@@ -26,15 +50,7 @@ async def scan_image(
     mode: Annotated[Literal["food", "tag", "receipt"], Form(...)],
     file: Annotated[UploadFile, File(...)],
 ):
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=415,
-                            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp")
-
-    content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="Uploaded image is empty")
-    if len(content) > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+    content = await read_scan_upload(file)
 
     try:
         content = preprocess_image_for_mode(content, mode=mode)
@@ -150,15 +166,7 @@ async def predict_expiry(
 async def scan_multi(
     file: Annotated[UploadFile, File(...)],
 ):
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=415,
-                            detail="Unsupported image type. Use one of: image/jpeg, image/png, image/webp")
-
-    content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="Uploaded image is empty")
-    if len(content) > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=413, detail="Image is too large. Max size is 8MB")
+    content = await read_scan_upload(file)
 
     try:
         content = preprocess_image_for_mode(content, mode="food")
