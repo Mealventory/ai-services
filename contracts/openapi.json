@@ -52,6 +52,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Recognition provider unavailable"
           }
         }
       }
@@ -89,7 +92,7 @@
             "required": false,
             "schema": {
               "type": "number",
-              "default": 20.0,
+              "default": 20,
               "title": "Temperature"
             }
           },
@@ -99,7 +102,7 @@
             "required": false,
             "schema": {
               "type": "number",
-              "default": 50.0,
+              "default": 50,
               "title": "Humidity"
             }
           },
@@ -191,6 +194,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Recognition provider unavailable"
           }
         }
       }
@@ -398,8 +404,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence",
             "description": "Detection confidence score"
           },
@@ -574,11 +580,11 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence",
             "description": "Overall detection confidence score",
-            "default": 0.0
+            "default": 0
           },
           "needs_review": {
             "type": "boolean",

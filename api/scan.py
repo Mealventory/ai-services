@@ -15,6 +15,24 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 
+def check_ocr_result(result: dict | None, *, purpose: Literal["product", "text"]) -> dict | None:
+    """Apply one provider-error policy to all scan modes.
+
+    None and successful zero-item responses mean recognition completed without
+    a match. Provider errors are *not* empty detections. Keep upstream error
+    messages out of client responses and leave request ID/status logging to
+    the existing HTTP middleware.
+    """
+    if result and result.get("error"):
+        detail = (
+            "Product recognition is unavailable. Please try again later."
+            if purpose == "product"
+            else "Text recognition is unavailable. Please try again later."
+        )
+        raise HTTPException(status_code=503, detail=detail)
+    return result
+
+
 async def read_scan_upload(file: UploadFile) -> bytes:
     """Read at most the upload limit plus one byte, closing on every outcome.
 
@@ -44,7 +62,8 @@ async def read_scan_upload(file: UploadFile) -> bytes:
     response_model=ScanResponse,
     responses={400: {"description": "Invalid request payload"},
                413: {"description": "Image exceeds max size"},
-               415: {"description": "Unsupported media type"}}
+               415: {"description": "Unsupported media type"},
+               503: {"description": "Recognition provider unavailable"}}
 )
 async def scan_image(
     mode: Annotated[Literal["food", "tag", "receipt"], Form(...)],
@@ -61,9 +80,7 @@ async def scan_image(
         items = await detect_food(content)
         if not items:
             # Packaging often has readable food names even when visual labels are generic.
-            packaging = await detect_text_type(content)
-            if packaging and packaging.get('error'):
-                raise HTTPException(503, detail='Product recognition is unavailable. Check Google Vision configuration.')
+            packaging = check_ocr_result(await detect_text_type(content), purpose="product")
             items = packaging.get('items', []) if packaging else []
         if items:
             conf = max(item["confidence"] for item in items)
@@ -86,9 +103,9 @@ async def scan_image(
             "message": "No food item matched with enough confidence. Try a clearer image.",
         }
 
-    text_result = await detect_text_type(content, expected_type=mode)
-    if text_result and text_result.get('error'):
-        raise HTTPException(503, detail='Text recognition is unavailable. Check Google Vision credentials, API access and billing.')
+    text_result = check_ocr_result(
+        await detect_text_type(content, expected_type=mode), purpose="text"
+    )
     if not text_result:
         return {
             "type": "unknown",
@@ -161,7 +178,8 @@ async def predict_expiry(
     response_model=ScanResponse,
     responses={400: {"description": "Invalid request payload"},
                413: {"description": "Image exceeds max size"},
-               415: {"description": "Unsupported media type"}}
+               415: {"description": "Unsupported media type"},
+               503: {"description": "Recognition provider unavailable"}}
 )
 async def scan_multi(
     file: Annotated[UploadFile, File(...)],
@@ -175,7 +193,7 @@ async def scan_multi(
 
     items = await detect_food(content)
     if not items:
-        packaging = await detect_text_type(content)
+        packaging = check_ocr_result(await detect_text_type(content), purpose="product")
         items = packaging.get('items', []) if packaging else []
 
     if items:
