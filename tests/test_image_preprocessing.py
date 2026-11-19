@@ -2,6 +2,8 @@
 import asyncio
 import io
 import unittest
+import zlib
+from unittest.mock import patch
 from PIL import Image
 
 from fastapi import HTTPException, UploadFile
@@ -34,6 +36,38 @@ class TestImagePreprocessing(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             decode_and_normalize_image(b"")
+
+    def _png_with_declared_dimensions(self, width, height):
+        """Forge only the small PNG header, never allocate declared pixels."""
+        out = io.BytesIO()
+        Image.new("RGB", (1, 1), "red").save(out, format="PNG")
+        data = bytearray(out.getvalue())
+        data[16:20] = width.to_bytes(4, "big")
+        data[20:24] = height.to_bytes(4, "big")
+        data[29:33] = (zlib.crc32(data[12:29]) & 0xFFFFFFFF).to_bytes(4, "big")
+        return bytes(data)
+
+    def test_tiny_compressed_file_with_excessive_pixel_count_is_rejected(self):
+        image = self._png_with_declared_dimensions(6000, 5000)
+        self.assertLess(len(image), 1000)
+        with self.assertRaisesRegex(ValueError, "dimensions"):
+            decode_and_normalize_image(image)
+        with self.assertRaises(ValueError):
+            preprocess_image_for_mode(image, mode="receipt")
+        with self.assertRaises(ValueError):
+            preprocess_for_classification(image)
+
+    def test_extreme_single_dimension_is_rejected_before_decode(self):
+        image = self._png_with_declared_dimensions(11000, 1)
+        with self.assertRaisesRegex(ValueError, "dimensions"):
+            decode_and_normalize_image(image)
+
+    def test_pillow_decompression_bomb_warnings_and_errors_are_value_errors(self):
+        for exception in (Image.DecompressionBombWarning, Image.DecompressionBombError):
+            with self.subTest(exception=exception):
+                with patch("services.image_preprocessing.Image.open", side_effect=exception("oversize")):
+                    with self.assertRaisesRegex(ValueError, "dimensions"):
+                        decode_and_normalize_image(b"nonempty")
 
     def test_color_format_normalized_to_rgb(self):
         # Grayscale 'L'
